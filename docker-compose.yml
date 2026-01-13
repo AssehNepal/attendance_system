@@ -1,0 +1,56 @@
+version: '3'
+services:
+  common:
+    env_file:
+      - .env
+    container_name: census-backend
+    restart: always
+    build: .
+    ports:
+      - '$PORT:$PORT'
+    links:
+      - postgres
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      DB_DATABASE: '${DB_DATABASE}'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: census@123
+      TZ: 'GMT'
+      PGTZ: 'GMT'
+    ports:
+      - '${DB_PORT}:5432'
+    expose:
+      - '${DB_PORT}'
+    env_file:
+      - .env
+    volumes:
+      - ~/docker-data/pgadmin:/root/.pgadmin
+      # - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh  # Commented out due to mount permission issues
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+      - '8080:80'
+    volumes:
+      - ~/pgadmin-data:/root/.pgadmin
+    env_file:
+      - .env
+    links:
+      - postgres
+
+  redis-server:
+    image: redis
+    container_name: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - ~/redis-service/config/redis.conf:/redis.conf
+    command: ['redis-server', '/redis.conf']
+
+volumes:
+  postgres:
+    driver: local
