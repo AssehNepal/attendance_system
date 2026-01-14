@@ -1,4 +1,4 @@
-import type { UserEntity } from '../../user/user.entity';
+import type { User } from '../../users/entities/user.entity';
 import type { Admin } from './admin.entity';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractEntity } from '../../../common/abstract.entity';
@@ -8,9 +8,9 @@ export class AuditLog extends AbstractEntity {
   @Column({ type: 'uuid', nullable: true, name: 'user_id' })
   userId?: string;
 
-  @ManyToOne('UserEntity', 'auditLogs', { nullable: true })
+  @ManyToOne('User', 'auditLogs', { nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user?: UserEntity;
+  user?: User;
 
   @Column({ type: 'uuid', nullable: true, name: 'admin_id' })
   adminId?: string;

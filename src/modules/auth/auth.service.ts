@@ -6,7 +6,7 @@ import type { RoleType } from '../../constants/role-type.ts';
 import { TokenType } from '../../constants/token-type.ts';
 import { UserNotFoundException } from '../../exceptions/user-not-found.exception.ts';
 import { ApiConfigService } from '../../shared/services/api-config.service.ts';
-import type { UserEntity } from '../user/user.entity.ts';
+import type { UserEntity } from '../users/entities/user.entity.ts';
 import { UserService } from '../user/user.service.ts';
 import { TokenPayloadDto } from './dto/token-payload.dto.ts';
 import type { UserLoginDto } from './dto/user-login.dto.ts';

@@ -25,7 +25,7 @@ export class Admin extends AbstractEntity {
   @JoinColumn({ name: 'office_location_id' })
   officeLocation?: OfficeLocation;
 
-  @Column({ type: 'varchar', length: 100, nullable: true, name: 'agency_id' })
+  @Column({ type: 'uuid', nullable: true, name: 'agency_id' })
   agencyId?: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true, name: 'mobile_no' })

@@ -8,18 +8,28 @@ import { addTransactionalDataSource } from 'typeorm-transactional';
 
 import { AuthModule } from './modules/auth/auth.module.ts';
 import { HealthCheckerModule } from './modules/health-checker/health-checker.module.ts';
-import { PostModule } from './modules/post/post.module.ts';
-import { UserModule } from './modules/user/user.module.ts';
+import { UsersModule } from './modules/users/users.module.ts';
+import { AdminModule } from './modules/admin/admin.module.ts';
+import { RolesModule } from './modules/roles/roles.module.ts';
+import { PermissionsModule } from './modules/permissions/permissions.module.ts';
+import { OfficeLocationModule } from './modules/office-location/office-location.module.ts';
+import { AgencyModule } from './modules/agency/agency.module.ts';
+import { AdminRoleModule } from './modules/admin-role/admin-role.module.ts';
+import { RolePermissionModule } from './modules/role-permission/role-permission.module.ts';
 import { ApiConfigService } from './shared/services/api-config.service.ts';
 import { SharedModule } from './shared/shared.module.ts';
-import { CommentsModule } from './modules/comments/comments.module.ts';
 
 @Module({
   imports: [
     AuthModule,
-    UserModule,
-    PostModule,
-    CommentsModule,
+    UsersModule,
+    AdminModule,
+    RolesModule,
+    PermissionsModule,
+    OfficeLocationModule,
+    AgencyModule,
+    AdminRoleModule,
+    RolePermissionModule,
     ClsModule.forRoot({
       global: true,
       middleware: {

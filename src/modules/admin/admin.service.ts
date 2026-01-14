@@ -1,0 +1,193 @@
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { PageDto } from '../../common/dto/page.dto';
+import { PageMetaDto } from '../../common/dto/page-meta.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import { UpdateAdminDto } from './dto/update-admin.dto';
+import { QueryAdminDto } from './dto/query-admin.dto';
+import { FilterAdminDto } from './dto/filter-admin.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
+import { Admin } from './entities/admin.entity';
+import { AdminRole } from './entities/admin-role.entity';
+
+@Injectable()
+export class AdminService {
+  constructor(
+    @InjectRepository(Admin)
+    private readonly adminRepository: Repository<Admin>,
+    @InjectRepository(AdminRole)
+    private readonly adminRoleRepository: Repository<AdminRole>,
+  ) {}
+
+  async create(createAdminDto: CreateAdminDto): Promise<Admin> {
+    // Check if admin with CID already exists
+    const existing = await this.adminRepository.findOne({
+      where: { cidNo: createAdminDto.cidNo },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Admin with CID "${createAdminDto.cidNo}" already exists`);
+    }
+
+    const admin = this.adminRepository.create(createAdminDto);
+    return this.adminRepository.save(admin);
+  }
+
+  async findAll(queryDto: QueryAdminDto): Promise<PageDto<Admin>> {
+    const queryBuilder = this.adminRepository
+      .createQueryBuilder('admin')
+      .leftJoinAndSelect('admin.officeLocation', 'officeLocation')
+      .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
+      .leftJoinAndSelect('adminRoles.role', 'role');
+
+    if (queryDto.cidNo) {
+      queryBuilder.andWhere('admin.cid_no ILIKE :cidNo', {
+        cidNo: `%${queryDto.cidNo}%`,
+      });
+    }
+
+    if (queryDto.officeLocationId) {
+      queryBuilder.andWhere('admin.office_location_id = :officeLocationId', {
+        officeLocationId: queryDto.officeLocationId,
+      });
+    }
+
+    if (queryDto.agencyId) {
+      queryBuilder.andWhere('admin.agency_id = :agencyId', {
+        agencyId: queryDto.agencyId,
+      });
+    }
+
+    queryBuilder
+      .orderBy('admin.created_at', queryDto.order)
+      .skip(queryDto.skip)
+      .take(queryDto.take);
+
+    const [entities, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+
+    return new PageDto(entities, pageMetaDto);
+  }
+
+  async findOne(id: Uuid): Promise<Admin> {
+    const admin = await this.adminRepository.findOne({
+      where: { id },
+      relations: ['officeLocation', 'adminRoles', 'adminRoles.role'],
+    });
+
+    if (!admin) {
+      throw new NotFoundException(`Admin with ID "${id}" not found`);
+    }
+
+    return admin;
+  }
+
+  async filter(filterDto: FilterAdminDto): Promise<Admin[]> {
+    const queryBuilder = this.adminRepository
+      .createQueryBuilder('admin')
+      .leftJoinAndSelect('admin.officeLocation', 'officeLocation')
+      .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
+      .leftJoinAndSelect('adminRoles.role', 'role');
+
+    if (filterDto.cidNo) {
+      queryBuilder.andWhere('admin.cid_no ILIKE :cidNo', {
+        cidNo: `%${filterDto.cidNo}%`,
+      });
+    }
+
+    if (filterDto.officeLocationId) {
+      queryBuilder.andWhere('admin.office_location_id = :officeLocationId', {
+        officeLocationId: filterDto.officeLocationId,
+      });
+    }
+
+    if (filterDto.agencyId) {
+      queryBuilder.andWhere('admin.agency_id = :agencyId', {
+        agencyId: filterDto.agencyId,
+      });
+    }
+
+    if (filterDto.email) {
+      queryBuilder.andWhere('admin.email ILIKE :email', {
+        email: `%${filterDto.email}%`,
+      });
+    }
+
+    if (filterDto.mobileNo) {
+      queryBuilder.andWhere('admin.mobile_no ILIKE :mobileNo', {
+        mobileNo: `%${filterDto.mobileNo}%`,
+      });
+    }
+
+    return queryBuilder.getMany();
+  }
+
+  async update(id: Uuid, updateAdminDto: UpdateAdminDto): Promise<Admin> {
+    const admin = await this.findOne(id);
+
+    // If updating CID, check for conflicts
+    if (updateAdminDto.cidNo && updateAdminDto.cidNo !== admin.cidNo) {
+      const existing = await this.adminRepository.findOne({
+        where: { cidNo: updateAdminDto.cidNo },
+      });
+
+      if (existing) {
+        throw new ConflictException(`Admin with CID "${updateAdminDto.cidNo}" already exists`);
+      }
+    }
+
+    Object.assign(admin, updateAdminDto);
+
+    return this.adminRepository.save(admin);
+  }
+
+  async remove(id: Uuid): Promise<void> {
+    const admin = await this.findOne(id);
+    await this.adminRepository.remove(admin);
+  }
+
+  async assignRole(adminId: Uuid, assignRoleDto: AssignRoleDto): Promise<AdminRole> {
+    // Check if admin exists
+    await this.findOne(adminId);
+
+    // Check if role is already assigned
+    const existing = await this.adminRoleRepository.findOne({
+      where: {
+        adminId,
+        roleId: assignRoleDto.roleId,
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Role already assigned to this admin');
+    }
+
+    const adminRole = this.adminRoleRepository.create({
+      adminId,
+      roleId: assignRoleDto.roleId,
+    });
+
+    return this.adminRoleRepository.save(adminRole);
+  }
+
+  async removeRole(adminId: Uuid, roleId: Uuid): Promise<void> {
+    const adminRole = await this.adminRoleRepository.findOne({
+      where: { adminId, roleId },
+    });
+
+    if (!adminRole) {
+      throw new NotFoundException('Role assignment not found');
+    }
+
+    await this.adminRoleRepository.remove(adminRole);
+  }
+
+  async findByCidNo(cidNo: string): Promise<Admin | null> {
+    return this.adminRepository.findOne({
+      where: { cidNo },
+      relations: ['adminRoles', 'adminRoles.role'],
+    });
+  }
+}

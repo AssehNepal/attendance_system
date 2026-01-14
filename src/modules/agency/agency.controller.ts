@@ -1,0 +1,73 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { AgencyService } from './agency.service';
+import { CreateAgencyDto } from './dto/create-agency.dto';
+import { UpdateAgencyDto } from './dto/update-agency.dto';
+import { QueryAgencyDto } from './dto/query-agency.dto';
+import { FilterAgencyDto } from './dto/filter-agency.dto';
+
+@Controller('agencies')
+@ApiTags('Agencies')
+export class AgencyController {
+  constructor(private readonly agencyService: AgencyService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new agency' })
+  @ApiResponse({ status: 201, description: 'Agency created successfully' })
+  @ApiResponse({ status: 409, description: 'Agency with code already exists' })
+  create(@Body() createAgencyDto: CreateAgencyDto) {
+    return this.agencyService.create(createAgencyDto);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all agencies with pagination' })
+  @ApiResponse({ status: 200, description: 'Returns paginated agencies' })
+  findAll(@Query() queryDto: QueryAgencyDto) {
+    return this.agencyService.findAll(queryDto);
+  }
+
+  @Get('search/filter')
+  @ApiOperation({ summary: 'Filter agencies by criteria' })
+  @ApiResponse({ status: 200, description: 'Returns filtered agencies' })
+  filter(@Query() filterDto: FilterAgencyDto) {
+    return this.agencyService.filter(filterDto);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get agency by ID' })
+  @ApiResponse({ status: 200, description: 'Returns agency' })
+  @ApiResponse({ status: 404, description: 'Agency not found' })
+  findOne(@Param('id', ParseUUIDPipe) id: Uuid) {
+    return this.agencyService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update agency' })
+  @ApiResponse({ status: 200, description: 'Agency updated successfully' })
+  update(
+    @Param('id', ParseUUIDPipe) id: Uuid,
+    @Body() updateAgencyDto: UpdateAgencyDto,
+  ) {
+    return this.agencyService.update(id, updateAgencyDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete agency' })
+  @ApiResponse({ status: 204, description: 'Agency deleted successfully' })
+  remove(@Param('id', ParseUUIDPipe) id: Uuid) {
+    return this.agencyService.remove(id);
+  }
+}

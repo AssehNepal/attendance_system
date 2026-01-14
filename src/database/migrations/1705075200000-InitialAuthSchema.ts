@@ -29,6 +29,19 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
       )
     `);
 
+    // Create agency table (must be before admin table for foreign key)
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "agency" (
+        "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+        "created_at" TIMESTAMP NOT NULL DEFAULT now(),
+        "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
+        "name" character varying(255) NOT NULL,
+        "code" character varying(50) NOT NULL,
+        CONSTRAINT "UQ_agency_code" UNIQUE ("code"),
+        CONSTRAINT "PK_agency" PRIMARY KEY ("id")
+      )
+    `);
+
     // Create roles table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "roles" (
@@ -80,9 +93,10 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
         "role_type" character varying(20) NOT NULL DEFAULT 'ADMIN',
         "password" character varying(255) NOT NULL,
         "office_location_id" uuid,
-        "agency_id" character varying(100),
+        "agency_id" uuid,
         "mobile_no" character varying(20),
         "email" character varying(255),
+        "ndi_deeplink" character varying(255),
         CONSTRAINT "UQ_admin_cid_no" UNIQUE ("cid_no"),
         CONSTRAINT "PK_admin" PRIMARY KEY ("id")
       )
@@ -112,6 +126,21 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
           ADD CONSTRAINT "FK_admin_office_location"
           FOREIGN KEY ("office_location_id")
           REFERENCES "office_location"("id")
+          ON DELETE SET NULL;
+        END IF;
+      END $$;
+    `);
+
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'FK_admin_agency'
+        ) THEN
+          ALTER TABLE "admin"
+          ADD CONSTRAINT "FK_admin_agency"
+          FOREIGN KEY ("agency_id")
+          REFERENCES "agency"("id")
           ON DELETE SET NULL;
         END IF;
       END $$;
@@ -208,6 +237,9 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
     await queryRunner.query(`
       ALTER TABLE "admin" DROP CONSTRAINT IF EXISTS "FK_admin_office_location"
     `);
+    await queryRunner.query(`
+      ALTER TABLE "admin" DROP CONSTRAINT IF EXISTS "FK_admin_agency"
+    `);
 
     // Drop all auth tables in correct order
     await queryRunner.query(`DROP TABLE IF EXISTS "admin_role"`);
@@ -217,5 +249,6 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS "roles"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "office_location"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "agency"`);
   }
 }

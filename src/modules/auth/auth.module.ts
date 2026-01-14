@@ -4,7 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApiConfigService } from '../../shared/services/api-config.service.ts';
-import { UserModule } from '../user/user.module.ts';
+import { UsersModule } from '../users/users.module.ts';
 import { AuthController } from './auth.controller.ts';
 import { AuthService } from './services/auth.service.ts';
 import { JwtStrategy } from './jwt.strategy.ts';
@@ -17,13 +17,13 @@ import { OfficeLocation } from './entities/office-location.entity.ts';
 import { Permission } from './entities/permission.entity.ts';
 import { Role } from './entities/role.entity.ts';
 import { RolePermission } from './entities/role-permission.entity.ts';
-import { UserEntity } from '../user/user.entity.ts';
+import { User } from '../users/entities/user.entity.ts';
 import { SeedService } from './services/seed.service.ts';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      UserEntity,
+      User,
       Admin,
       AdminRole,
       OfficeLocation,
@@ -31,7 +31,7 @@ import { SeedService } from './services/seed.service.ts';
       Role,
       RolePermission,
     ]),
-    forwardRef(() => UserModule),
+    forwardRef(() => UsersModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: (configService: ApiConfigService) => ({

@@ -2,8 +2,8 @@ import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { AbstractEntity } from '../../../common/abstract.entity.ts';
 import { UseDto } from '../../../decorators/use-dto.decorator.ts';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
-import { UserEntity } from '../../user/user.entity.ts';
-import { Admin } from './admin.entity.ts';
+import type { User } from '../../users/entities/user.entity.ts';
+import type { Admin } from './admin.entity.ts';
 
 @Entity({ name: 'refresh_token' })
 @UseDto(RefreshTokenDto)
@@ -30,11 +30,11 @@ export class RefreshToken extends AbstractEntity<RefreshTokenDto> {
   @Column({ nullable: true, type: 'text', name: 'user_agent' })
   userAgent!: string | null;
 
-  @ManyToOne(() => UserEntity, { nullable: true })
+  @ManyToOne('User', { nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user?: UserEntity | null;
+  user?: User | null;
 
-  @ManyToOne(() => Admin, { nullable: true })
+  @ManyToOne('Admin', { nullable: true })
   @JoinColumn({ name: 'admin_id' })
   admin?: Admin | null;
 }

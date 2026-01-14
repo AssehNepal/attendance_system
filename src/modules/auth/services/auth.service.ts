@@ -9,7 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { UserEntity } from '../../user/user.entity';
+import { User } from '../../users/entities/user.entity';
+import { UsersService } from '../../users/users.service';
 import { Admin } from '../entities/admin.entity';
 import { Role } from '../entities/role.entity';
 import { Permission } from '../entities/permission.entity';
@@ -45,8 +46,7 @@ export interface LoginResponse {
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
+    private usersService: UsersService,
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
     @InjectRepository(Role)
@@ -78,9 +78,7 @@ export class AuthService {
     }
 
     // Check if user exists
-    let user = await this.userRepository.findOne({
-      where: { cidNo },
-    });
+    let user = await this.usersService.findByCidNo(cidNo);
 
     // First time login - auto-create user
     if (!user) {
@@ -96,8 +94,7 @@ export class AuthService {
 
       // Update NDI deeplink if provided
       if (ndiDeeplink) {
-        user.ndiDeeplink = ndiDeeplink;
-        await this.userRepository.save(user);
+        await this.usersService.update(user.id, { ndiDeeplink });
       }
     }
 
@@ -191,21 +188,19 @@ export class AuthService {
     cidNo: string,
     password?: string,
     ndiDeeplink?: string,
-  ): Promise<UserEntity> {
+  ): Promise<User> {
     // Hash password if provided
     const hashedPassword = password
       ? await bcrypt.hash(password, BCRYPT_ROUNDS)
       : null;
 
     // Create user
-    const user = this.userRepository.create({
+    const user = await this.usersService.create({
       cidNo,
-      password: hashedPassword,
-      ndiDeeplink: ndiDeeplink || null,
-      roleType: 'CITIZEN',
+      password: hashedPassword || undefined,
+      ndiDeeplink: ndiDeeplink || undefined,
     });
 
-    await this.userRepository.save(user);
     return user;
   }
 

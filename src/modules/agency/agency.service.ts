@@ -1,0 +1,127 @@
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { PageDto } from '../../common/dto/page.dto';
+import { PageMetaDto } from '../../common/dto/page-meta.dto';
+import { CreateAgencyDto } from './dto/create-agency.dto';
+import { UpdateAgencyDto } from './dto/update-agency.dto';
+import { QueryAgencyDto } from './dto/query-agency.dto';
+import { FilterAgencyDto } from './dto/filter-agency.dto';
+import { Agency } from './entities/agency.entity';
+
+@Injectable()
+export class AgencyService {
+  constructor(
+    @InjectRepository(Agency)
+    private readonly agencyRepository: Repository<Agency>,
+  ) {}
+
+  async create(createAgencyDto: CreateAgencyDto): Promise<Agency> {
+    // Check if agency with code already exists
+    const existing = await this.agencyRepository.findOne({
+      where: { code: createAgencyDto.code },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Agency with code "${createAgencyDto.code}" already exists`);
+    }
+
+    const agency = this.agencyRepository.create(createAgencyDto);
+    return this.agencyRepository.save(agency);
+  }
+
+  async findAll(queryDto: QueryAgencyDto): Promise<PageDto<Agency>> {
+    const queryBuilder = this.agencyRepository.createQueryBuilder('agency');
+
+    if (queryDto.name) {
+      queryBuilder.andWhere('agency.name ILIKE :name', {
+        name: `%${queryDto.name}%`,
+      });
+    }
+
+    if (queryDto.code) {
+      queryBuilder.andWhere('agency.code ILIKE :code', {
+        code: `%${queryDto.code}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy('agency.created_at', queryDto.order)
+      .skip(queryDto.skip)
+      .take(queryDto.take);
+
+    const [entities, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+
+    return new PageDto(entities, pageMetaDto);
+  }
+
+  async findOne(id: Uuid): Promise<Agency> {
+    const agency = await this.agencyRepository.findOne({
+      where: { id },
+      relations: ['admins'],
+    });
+
+    if (!agency) {
+      throw new NotFoundException(`Agency with ID "${id}" not found`);
+    }
+
+    return agency;
+  }
+
+  async filter(filterDto: FilterAgencyDto): Promise<Agency[]> {
+    const queryBuilder = this.agencyRepository.createQueryBuilder('agency');
+
+    if (filterDto.name) {
+      queryBuilder.andWhere('agency.name ILIKE :name', {
+        name: `%${filterDto.name}%`,
+      });
+    }
+
+    if (filterDto.code) {
+      queryBuilder.andWhere('agency.code ILIKE :code', {
+        code: `%${filterDto.code}%`,
+      });
+    }
+
+    if (filterDto.description) {
+      queryBuilder.andWhere('agency.description ILIKE :description', {
+        description: `%${filterDto.description}%`,
+      });
+    }
+
+    return queryBuilder.getMany();
+  }
+
+  async update(id: Uuid, updateAgencyDto: UpdateAgencyDto): Promise<Agency> {
+    const agency = await this.findOne(id);
+
+    // If updating code, check for conflicts
+    if (updateAgencyDto.code && updateAgencyDto.code !== agency.code) {
+      const existing = await this.agencyRepository.findOne({
+        where: { code: updateAgencyDto.code },
+      });
+
+      if (existing) {
+        throw new ConflictException(`Agency with code "${updateAgencyDto.code}" already exists`);
+      }
+    }
+
+    Object.assign(agency, updateAgencyDto);
+
+    return this.agencyRepository.save(agency);
+  }
+
+  async remove(id: Uuid): Promise<void> {
+    const agency = await this.findOne(id);
+    await this.agencyRepository.remove(agency);
+  }
+
+  async findByCode(code: string): Promise<Agency | null> {
+    return this.agencyRepository.findOne({
+      where: { code },
+      relations: ['admins'],
+    });
+  }
+}
