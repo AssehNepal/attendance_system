@@ -43,7 +43,10 @@ export class UsersService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: queryDto,
+    });
 
     return new PageDto(entities, pageMetaDto);
   }
