@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
@@ -10,6 +15,8 @@ import { FilterAdminDto } from './dto/filter-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
+import { OfficeLocation } from '../office-location/entities/office-location.entity';
+import { Agency } from '../agency/entities/agency.entity';
 
 @Injectable()
 export class AdminService {
@@ -18,16 +25,96 @@ export class AdminService {
     private readonly adminRepository: Repository<Admin>,
     @InjectRepository(AdminRole)
     private readonly adminRoleRepository: Repository<AdminRole>,
+    @InjectRepository(OfficeLocation)
+    private readonly officeLocationRepository: Repository<OfficeLocation>,
+    @InjectRepository(Agency)
+    private readonly agencyRepository: Repository<Agency>,
   ) {}
 
   async create(createAdminDto: CreateAdminDto): Promise<Admin> {
-    // Check if admin with CID already exists
+    // 1. Validate CID format (400 Bad Request)
+    if (!/^\d{11}$/.test(createAdminDto.cidNo)) {
+      throw new BadRequestException('CID must be exactly 11 digits');
+    }
+
+    // 2. Validate password length (400 Bad Request)
+    if (createAdminDto.password.length < 11) {
+      throw new BadRequestException(
+        'Password must be at least 11 characters long',
+      );
+    }
+
+    // 3. Validate mobile number format if provided (400 Bad Request)
+    if (
+      createAdminDto.mobileNo &&
+      !/^\+975\d{8}$/.test(createAdminDto.mobileNo)
+    ) {
+      throw new BadRequestException(
+        'Mobile number must match format +975XXXXXXXX',
+      );
+    }
+
+    // 4. Validate email format if provided (400 Bad Request)
+    if (createAdminDto.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(createAdminDto.email)) {
+        throw new BadRequestException('Email must be a valid email address');
+      }
+    }
+
+    // 5. Validate UUID format for officeLocationId if provided (400 Bad Request)
+    if (createAdminDto.officeLocationId) {
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(createAdminDto.officeLocationId)) {
+        throw new BadRequestException(
+          'Office Location ID must be a valid UUID',
+        );
+      }
+    }
+
+    // 6. Validate UUID format for agencyId if provided (400 Bad Request)
+    if (createAdminDto.agencyId) {
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(createAdminDto.agencyId)) {
+        throw new BadRequestException('Agency ID must be a valid UUID');
+      }
+    }
+
+    // 7. Check if admin with CID already exists (409 Conflict)
     const existing = await this.adminRepository.findOne({
       where: { cidNo: createAdminDto.cidNo },
     });
 
     if (existing) {
-      throw new ConflictException(`Admin with CID "${createAdminDto.cidNo}" already exists`);
+      throw new ConflictException(
+        `Admin with CID "${createAdminDto.cidNo}" already exists`,
+      );
+    }
+
+    // 8. Validate office location exists if provided (404 Not Found)
+    if (createAdminDto.officeLocationId) {
+      const officeLocation = await this.officeLocationRepository.findOne({
+        where: { id: createAdminDto.officeLocationId as any },
+      });
+      if (!officeLocation) {
+        throw new NotFoundException(
+          `Office location with ID ${createAdminDto.officeLocationId} not found`,
+        );
+      }
+    }
+
+    // 9. Validate agency exists if provided (404 Not Found)
+    if (createAdminDto.agencyId) {
+      const agency = await this.agencyRepository.findOne({
+        where: { id: createAdminDto.agencyId as any },
+      });
+      if (!agency) {
+        throw new NotFoundException(
+          `Agency with ID ${createAdminDto.agencyId} not found`,
+        );
+      }
     }
 
     const admin = this.adminRepository.create(createAdminDto);
@@ -66,7 +153,10 @@ export class AdminService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: queryDto,
+    });
 
     return new PageDto(entities, pageMetaDto);
   }
@@ -134,7 +224,9 @@ export class AdminService {
       });
 
       if (existing) {
-        throw new ConflictException(`Admin with CID "${updateAdminDto.cidNo}" already exists`);
+        throw new ConflictException(
+          `Admin with CID "${updateAdminDto.cidNo}" already exists`,
+        );
       }
     }
 
@@ -148,7 +240,10 @@ export class AdminService {
     await this.adminRepository.remove(admin);
   }
 
-  async assignRole(adminId: Uuid, assignRoleDto: AssignRoleDto): Promise<AdminRole> {
+  async assignRole(
+    adminId: Uuid,
+    assignRoleDto: AssignRoleDto,
+  ): Promise<AdminRole> {
     // Check if admin exists
     await this.findOne(adminId);
 

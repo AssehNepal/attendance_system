@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
@@ -21,13 +26,29 @@ export class RolesService {
   ) {}
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
-    // Check if role with name already exists
+    // 1. Validate name length (400 Bad Request)
+    if (createRoleDto.name.length < 3 || createRoleDto.name.length > 100) {
+      throw new BadRequestException(
+        'Name must be between 3 and 100 characters',
+      );
+    }
+
+    // 2. Validate description length if provided (400 Bad Request)
+    if (createRoleDto.description && createRoleDto.description.length > 1000) {
+      throw new BadRequestException(
+        'Description cannot exceed 1000 characters',
+      );
+    }
+
+    // 3. Check if role with name already exists (409 Conflict)
     const existing = await this.roleRepository.findOne({
       where: { name: createRoleDto.name },
     });
 
     if (existing) {
-      throw new ConflictException(`Role with name "${createRoleDto.name}" already exists`);
+      throw new ConflictException(
+        `Role with name "${createRoleDto.name}" already exists`,
+      );
     }
 
     const role = this.roleRepository.create(createRoleDto);
@@ -53,7 +74,10 @@ export class RolesService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: queryDto,
+    });
 
     return new PageDto(entities, pageMetaDto);
   }
@@ -110,7 +134,9 @@ export class RolesService {
       });
 
       if (existing) {
-        throw new ConflictException(`Role with name "${updateRoleDto.name}" already exists`);
+        throw new ConflictException(
+          `Role with name "${updateRoleDto.name}" already exists`,
+        );
       }
     }
 

@@ -3,7 +3,6 @@ import './boilerplate.polyfill';
 import {
   ClassSerializerInterceptor,
   HttpStatus,
-  UnprocessableEntityException,
   ValidationPipe,
 } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
@@ -58,11 +57,11 @@ export async function bootstrap(): Promise<NestExpressApplication> {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      errorHttpStatusCode: HttpStatus.BAD_REQUEST, // Changed from UNPROCESSABLE_ENTITY to BAD_REQUEST
       transform: true,
-      dismissDefaultMessages: true,
+      dismissDefaultMessages: false, // Changed to false to show proper validation messages
       forbidNonWhitelisted: true,
-      exceptionFactory: (errors) => new UnprocessableEntityException(errors),
+      // Removed exceptionFactory to use default BadRequestException
     }),
   );
 

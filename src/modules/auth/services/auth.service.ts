@@ -16,10 +16,11 @@ import { Role } from '../entities/role.entity';
 import { Permission } from '../entities/permission.entity';
 import { AdminRole } from '../entities/admin-role.entity';
 import { RolePermission } from '../entities/role-permission.entity';
+import { OfficeLocation } from '../entities/office-location.entity';
+import { Agency } from '../../agency/entities/agency.entity';
 import type { UserLoginDto } from '../dto/user-login.dto';
 import type { AdminLoginDto } from '../dto/admin-login.dto';
 import type { CreateAdminDto } from '../dto/create-admin.dto';
-import { OfficeLocation } from '../entities/office-location.entity';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -59,6 +60,8 @@ export class AuthService {
     private readonly rolePermissionRepository: Repository<RolePermission>,
     @InjectRepository(OfficeLocation)
     private readonly officeLocationRepository: Repository<OfficeLocation>,
+    @InjectRepository(Agency)
+    private readonly agencyRepository: Repository<Agency>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -143,6 +146,12 @@ export class AuthService {
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Update ndiDeeplink if provided
+    if (loginDto.ndiDeeplink !== undefined) {
+      admin.ndiDeeplink = loginDto.ndiDeeplink;
+      await this.adminRepository.save(admin);
     }
 
     // Get roles and permissions
@@ -327,6 +336,19 @@ export class AuthService {
       throw new BadRequestException(
         'Either officeLocationId or officeLocationName must be provided',
       );
+    }
+
+    // 2.5. Validate agency if provided
+    if (createAdminDto.agencyId) {
+      const agency = await this.agencyRepository.findOne({
+        where: { id: createAdminDto.agencyId as any },
+      });
+
+      if (!agency) {
+        throw new NotFoundException(
+          `Agency with ID ${createAdminDto.agencyId} not found`,
+        );
+      }
     }
 
     // 3. Validate all role IDs exist

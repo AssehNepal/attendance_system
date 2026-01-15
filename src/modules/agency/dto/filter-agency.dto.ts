@@ -11,9 +11,4 @@ export class FilterAgencyDto {
   @IsString()
   @IsOptional()
   code?: string;
-
-  @ApiPropertyOptional({ description: 'Filter by description' })
-  @IsString()
-  @IsOptional()
-  description?: string;
 }

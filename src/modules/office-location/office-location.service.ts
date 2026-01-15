@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
@@ -16,13 +21,41 @@ export class OfficeLocationService {
     private readonly officeLocationRepository: Repository<OfficeLocation>,
   ) {}
 
-  async create(createOfficeLocationDto: CreateOfficeLocationDto): Promise<OfficeLocation> {
-    const officeLocation = this.officeLocationRepository.create(createOfficeLocationDto);
+  async create(
+    createOfficeLocationDto: CreateOfficeLocationDto,
+  ): Promise<OfficeLocation> {
+    // 1. Validate name length (400 Bad Request)
+    if (
+      createOfficeLocationDto.name.length < 3 ||
+      createOfficeLocationDto.name.length > 255
+    ) {
+      throw new BadRequestException(
+        'Name must be between 3 and 255 characters',
+      );
+    }
+
+    // 2. Check if office location with name already exists (409 Conflict)
+    const existing = await this.officeLocationRepository.findOne({
+      where: { name: createOfficeLocationDto.name },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Office location with name "${createOfficeLocationDto.name}" already exists`,
+      );
+    }
+
+    const officeLocation = this.officeLocationRepository.create(
+      createOfficeLocationDto,
+    );
     return this.officeLocationRepository.save(officeLocation);
   }
 
-  async findAll(queryDto: QueryOfficeLocationDto): Promise<PageDto<OfficeLocation>> {
-    const queryBuilder = this.officeLocationRepository.createQueryBuilder('officeLocation');
+  async findAll(
+    queryDto: QueryOfficeLocationDto,
+  ): Promise<PageDto<OfficeLocation>> {
+    const queryBuilder =
+      this.officeLocationRepository.createQueryBuilder('officeLocation');
 
     if (queryDto.name) {
       queryBuilder.andWhere('officeLocation.name ILIKE :name', {
@@ -37,7 +70,10 @@ export class OfficeLocationService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: queryDto,
+    });
 
     return new PageDto(entities, pageMetaDto);
   }
@@ -56,7 +92,8 @@ export class OfficeLocationService {
   }
 
   async filter(filterDto: FilterOfficeLocationDto): Promise<OfficeLocation[]> {
-    const queryBuilder = this.officeLocationRepository.createQueryBuilder('officeLocation');
+    const queryBuilder =
+      this.officeLocationRepository.createQueryBuilder('officeLocation');
 
     if (filterDto.name) {
       queryBuilder.andWhere('officeLocation.name ILIKE :name', {

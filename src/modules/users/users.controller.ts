@@ -26,6 +26,14 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid CID format, password too short',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - User with CID already exists',
+  })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

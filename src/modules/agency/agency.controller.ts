@@ -26,7 +26,15 @@ export class AgencyController {
   @Post()
   @ApiOperation({ summary: 'Create a new agency' })
   @ApiResponse({ status: 201, description: 'Agency created successfully' })
-  @ApiResponse({ status: 409, description: 'Agency with code already exists' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Invalid name/code format, name/code too short or too long',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Agency with same name or code already exists',
+  })
   create(@Body() createAgencyDto: CreateAgencyDto) {
     return this.agencyService.create(createAgencyDto);
   }

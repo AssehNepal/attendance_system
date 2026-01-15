@@ -10,9 +10,6 @@ export class Agency extends AbstractEntity {
   @Column({ type: 'varchar', length: 100, unique: true, name: 'code' })
   code!: string;
 
-  @Column({ type: 'text', nullable: true, name: 'description' })
-  description?: string;
-
   @OneToMany('Admin', 'agency')
   admins!: Admin[];
 }

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
@@ -17,13 +22,45 @@ export class AgencyService {
   ) {}
 
   async create(createAgencyDto: CreateAgencyDto): Promise<Agency> {
-    // Check if agency with code already exists
-    const existing = await this.agencyRepository.findOne({
+    // 1. Validate name length (400 Bad Request)
+    if (createAgencyDto.name.length < 3 || createAgencyDto.name.length > 255) {
+      throw new BadRequestException(
+        'Name must be between 3 and 255 characters',
+      );
+    }
+
+    // 2. Validate code length (400 Bad Request)
+    if (createAgencyDto.code.length < 2 || createAgencyDto.code.length > 50) {
+      throw new BadRequestException('Code must be between 2 and 50 characters');
+    }
+
+    // 3. Validate code format (400 Bad Request)
+    if (!/^[A-Z0-9_]+$/.test(createAgencyDto.code)) {
+      throw new BadRequestException(
+        'Code must contain only uppercase letters, numbers, and underscores',
+      );
+    }
+
+    // 4. Check if agency with code already exists (409 Conflict)
+    const existingCode = await this.agencyRepository.findOne({
       where: { code: createAgencyDto.code },
     });
 
-    if (existing) {
-      throw new ConflictException(`Agency with code "${createAgencyDto.code}" already exists`);
+    if (existingCode) {
+      throw new ConflictException(
+        `Agency with code "${createAgencyDto.code}" already exists`,
+      );
+    }
+
+    // 5. Check if agency with name already exists (409 Conflict)
+    const existingName = await this.agencyRepository.findOne({
+      where: { name: createAgencyDto.name },
+    });
+
+    if (existingName) {
+      throw new ConflictException(
+        `Agency with name "${createAgencyDto.name}" already exists`,
+      );
     }
 
     const agency = this.agencyRepository.create(createAgencyDto);
@@ -52,7 +89,10 @@ export class AgencyService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: queryDto,
+    });
 
     return new PageDto(entities, pageMetaDto);
   }
@@ -85,12 +125,6 @@ export class AgencyService {
       });
     }
 
-    if (filterDto.description) {
-      queryBuilder.andWhere('agency.description ILIKE :description', {
-        description: `%${filterDto.description}%`,
-      });
-    }
-
     return queryBuilder.getMany();
   }
 
@@ -104,7 +138,9 @@ export class AgencyService {
       });
 
       if (existing) {
-        throw new ConflictException(`Agency with code "${updateAgencyDto.code}" already exists`);
+        throw new ConflictException(
+          `Agency with code "${updateAgencyDto.code}" already exists`,
+        );
       }
     }
 

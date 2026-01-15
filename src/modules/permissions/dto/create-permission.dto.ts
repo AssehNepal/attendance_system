@@ -2,7 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePermissionDto {
-  @ApiProperty({ example: 'manage-users', description: 'Permission name' })
+  @ApiProperty({
+    example: 'manage-users',
+    description: 'Permission name',
+  })
   @IsString()
   @IsNotEmpty()
   name!: string;
@@ -20,7 +23,7 @@ export class CreatePermissionDto {
     description: 'Allowed actions',
   })
   @IsArray()
-  @IsNotEmpty()
+  @IsString({ each: true })
   actions!: string[];
 
   @ApiProperty({
@@ -28,6 +31,6 @@ export class CreatePermissionDto {
     description: 'Subjects the permission applies to',
   })
   @IsArray()
-  @IsNotEmpty()
+  @IsString({ each: true })
   subjects!: string[];
 }

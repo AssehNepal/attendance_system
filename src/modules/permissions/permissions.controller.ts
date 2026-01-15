@@ -26,7 +26,15 @@ export class PermissionsController {
   @Post()
   @ApiOperation({ summary: 'Create a new permission' })
   @ApiResponse({ status: 201, description: 'Permission created successfully' })
-  @ApiResponse({ status: 409, description: 'Permission with name already exists' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Invalid name/actions/subjects format or empty arrays',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Permission with same name already exists',
+  })
   create(@Body() createPermissionDto: CreatePermissionDto) {
     return this.permissionsService.create(createPermissionDto);
   }

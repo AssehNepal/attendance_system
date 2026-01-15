@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApiConfigService } from '../../shared/services/api-config.service.ts';
 import { UsersModule } from '../users/users.module.ts';
+import { AgencyModule } from '../agency/agency.module';
 import { AuthController } from './auth.controller.ts';
 import { AuthService } from './services/auth.service.ts';
 import { JwtStrategy } from './jwt.strategy.ts';
@@ -51,6 +52,7 @@ import { SeedService } from './services/seed.service.ts';
       }),
       inject: [ApiConfigService],
     }),
+    AgencyModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, PublicStrategy, SeedService],

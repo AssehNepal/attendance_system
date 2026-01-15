@@ -27,7 +27,14 @@ export class RolesController {
   @Post()
   @ApiOperation({ summary: 'Create a new role' })
   @ApiResponse({ status: 201, description: 'Role created successfully' })
-  @ApiResponse({ status: 409, description: 'Role with name already exists' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Name too short or too long',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Role with same name already exists',
+  })
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }

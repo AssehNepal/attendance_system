@@ -27,7 +27,19 @@ export class AdminController {
   @Post()
   @ApiOperation({ summary: 'Create a new admin (super admin only)' })
   @ApiResponse({ status: 201, description: 'Admin created successfully' })
-  @ApiResponse({ status: 409, description: 'Admin with CID already exists' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad Request - Invalid CID format, password too short, invalid UUID format, invalid email format, or invalid mobile number format',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - Office location or agency does not exist',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Admin with CID already exists',
+  })
   create(@Body() createAdminDto: CreateAdminDto) {
     return this.adminService.create(createAdminDto);
   }

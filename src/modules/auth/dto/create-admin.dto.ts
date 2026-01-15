@@ -1,19 +1,18 @@
 import {
   EmailField,
-  PhoneField,
   StringField,
   StringFieldOptional,
 } from '../../../decorators/field.decorators.ts';
-import { IsArray, IsOptional, IsUUID } from 'class-validator';
+import { IsArray, IsOptional, IsUUID, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAdminDto {
-  @StringField({ minLength: 11, maxLength: 20 })
+  @StringField({ minLength: 11, maxLength: 11 })
   @ApiProperty({
     description: 'Citizen ID Number (CID)',
-    example: '11111111111111',
+    example: '11111111111',
     minLength: 11,
-    maxLength: 20,
+    maxLength: 11,
   })
   cidNo!: string;
 
@@ -32,10 +31,14 @@ export class CreateAdminDto {
   })
   email!: string;
 
-  @PhoneField()
+  @StringField()
+  @Matches(/^\+975\d{8}$/, {
+    message:
+      'mobileNo must match phone number format +975 at front and 8 digits after that. in total 12 char',
+  })
   @ApiProperty({
     description: 'Mobile number',
-    example: '17123456',
+    example: '+97517123456',
   })
   mobileNo!: string;
 

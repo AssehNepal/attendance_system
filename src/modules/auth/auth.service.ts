@@ -6,8 +6,8 @@ import type { RoleType } from '../../constants/role-type.ts';
 import { TokenType } from '../../constants/token-type.ts';
 import { UserNotFoundException } from '../../exceptions/user-not-found.exception.ts';
 import { ApiConfigService } from '../../shared/services/api-config.service.ts';
-import type { UserEntity } from '../users/entities/user.entity.ts';
-import { UserService } from '../user/user.service.ts';
+import type { User } from '../users/entities/user.entity.ts';
+import { UsersService } from '../users/users.service.ts';
 import { TokenPayloadDto } from './dto/token-payload.dto.ts';
 import type { UserLoginDto } from './dto/user-login.dto.ts';
 
@@ -16,7 +16,7 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private configService: ApiConfigService,
-    private userService: UserService,
+    private usersService: UsersService,
   ) {}
 
   async createAccessToken(data: {
@@ -33,10 +33,8 @@ export class AuthService {
     });
   }
 
-  async validateUser(userLoginDto: UserLoginDto): Promise<UserEntity> {
-    const user = await this.userService.findOne({
-      email: userLoginDto.email,
-    });
+  async validateUser(userLoginDto: UserLoginDto): Promise<User> {
+    const user = await this.usersService.findByCidNo(userLoginDto.cidNo);
 
     const isPasswordValid = await validateHash(
       userLoginDto.password,

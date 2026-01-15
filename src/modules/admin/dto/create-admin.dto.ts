@@ -1,10 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateAdminDto {
-  @ApiProperty({ example: '11234567890123', description: 'CID Number' })
+  @ApiProperty({ example: '11234567890', description: 'CID Number (exactly 11 digits)' })
   @IsString()
   @IsNotEmpty()
+  @MinLength(11, { message: 'cidNo must be exactly 11 digits' })
+  @MaxLength(11, { message: 'cidNo must be exactly 11 digits' })
   cidNo!: string;
 
   @ApiProperty({ example: 'SecurePassword@123', description: 'Admin password' })
@@ -14,13 +24,13 @@ export class CreateAdminDto {
   password!: string;
 
   @ApiPropertyOptional({ description: 'Office Location ID' })
-  @IsUUID()
   @IsOptional()
-  officeLocationId?: Uuid;
+  @IsUUID('4', { message: 'officeLocationId must be a valid UUID' })
+  officeLocationId?: string;
 
   @ApiPropertyOptional({ description: 'Agency ID' })
-  @IsString()
   @IsOptional()
+  @IsUUID('4', { message: 'agencyId must be a valid UUID' })
   agencyId?: string;
 
   @ApiPropertyOptional({ example: '17123456', description: 'Mobile number' })
@@ -28,13 +38,11 @@ export class CreateAdminDto {
   @IsOptional()
   mobileNo?: string;
 
-  @ApiPropertyOptional({ example: 'admin@example.com', description: 'Email address' })
+  @ApiPropertyOptional({
+    example: 'admin@example.com',
+    description: 'Email address',
+  })
   @IsEmail()
   @IsOptional()
   email?: string;
-
-  @ApiPropertyOptional({ description: 'NDI Deeplink URL' })
-  @IsString()
-  @IsOptional()
-  ndiDeeplink?: string;
 }
