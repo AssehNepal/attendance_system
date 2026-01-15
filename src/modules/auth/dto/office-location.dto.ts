@@ -6,16 +6,8 @@ export class OfficeLocationDto extends AbstractDto {
   @StringField()
   name!: string;
 
-  @StringField({ nullable: true })
-  code!: string | null;
-
-  @StringField({ nullable: true })
-  description!: string | null;
-
   constructor(officeLocation: OfficeLocation) {
     super(officeLocation);
     this.name = officeLocation.name;
-    this.code = officeLocation.code;
-    this.description = officeLocation.description;
   }
 }

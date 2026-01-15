@@ -1,6 +1,5 @@
 import { AbstractDto } from '../../../common/dto/abstract.dto.ts';
 import {
-  BooleanFieldOptional,
   StringField,
   StringFieldOptional,
 } from '../../../decorators/field.decorators.ts';
@@ -11,15 +10,11 @@ export class RoleDto extends AbstractDto {
   name!: string;
 
   @StringFieldOptional()
-  description!: string | null;
-
-  @BooleanFieldOptional()
-  isActive!: boolean;
+  description?: string | null;
 
   constructor(role: Role) {
     super(role);
     this.name = role.name;
     this.description = role.description;
-    this.isActive = role.isActive;
   }
 }

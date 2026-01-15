@@ -1,6 +1,5 @@
 import { AbstractDto } from '../../../common/dto/abstract.dto.ts';
 import {
-  BooleanFieldOptional,
   StringField,
   StringFieldOptional,
 } from '../../../decorators/field.decorators.ts';
@@ -11,7 +10,7 @@ export class PermissionDto extends AbstractDto {
   name!: string;
 
   @StringFieldOptional()
-  description!: string | null;
+  description?: string | null;
 
   @StringField({ isArray: true })
   actions!: string[];
@@ -19,15 +18,11 @@ export class PermissionDto extends AbstractDto {
   @StringField({ isArray: true })
   subjects!: string[];
 
-  @BooleanFieldOptional()
-  isActive!: boolean;
-
   constructor(permission: Permission) {
     super(permission);
     this.name = permission.name;
     this.description = permission.description;
     this.actions = permission.actions;
     this.subjects = permission.subjects;
-    this.isActive = permission.isActive;
   }
 }

@@ -1,11 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import type { CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  PermissionAction,
-  PermissionSubject,
-} from '../entities/permission.entity.ts';
 
 export const PERMISSION_KEY = 'permission';
+
+export type PermissionAction = string;
+export type PermissionSubject = string;
 
 export interface PermissionRequirement {
   action: PermissionAction;

@@ -52,8 +52,8 @@ export class AuthService {
     private readonly adminRepository: Repository<Admin>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
-    @InjectRepository(Permission)
-    private readonly permissionRepository: Repository<Permission>,
+    // @InjectRepository(Permission)
+    // private readonly permissionRepository: Repository<Permission>,
     @InjectRepository(AdminRole)
     private readonly adminRoleRepository: Repository<AdminRole>,
     @InjectRepository(RolePermission)

@@ -4,7 +4,12 @@ import { AbstractEntity } from '../../../common/abstract.entity';
 
 @Entity('users')
 export class User extends AbstractEntity {
-  @Column({ type: 'varchar', length: 20, default: 'CITIZEN', name: 'role_type' })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: 'CITIZEN',
+    name: 'role_type',
+  })
   roleType!: string;
 
   @Column({ type: 'varchar', length: 20, unique: true, name: 'cid_no' })
@@ -17,3 +22,6 @@ export class User extends AbstractEntity {
   @Column({ type: 'text', nullable: true, name: 'ndi_deeplink' })
   ndiDeeplink?: string;
 }
+
+// Export alias for backward compatibility
+export { User as UserEntity };

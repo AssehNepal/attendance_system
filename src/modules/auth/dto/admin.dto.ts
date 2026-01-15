@@ -10,16 +10,16 @@ export class AdminDto extends AbstractDto {
   roleType!: string;
 
   @StringFieldOptional()
-  officeLocationId!: string;
+  officeLocationId?: string;
 
   @StringFieldOptional()
-  agencyId!: string | null;
+  agencyId?: string | null;
 
   @StringFieldOptional()
-  mobileNo!: string;
+  mobileNo?: string;
 
   @StringFieldOptional()
-  email!: string;
+  email?: string;
 
   @StringFieldOptional()
   officeLocationName?: string;

@@ -1,34 +1,34 @@
 import { AbstractDto } from '../../../common/dto/abstract.dto.ts';
 import {
-  EnumField,
+  StringField,
   StringFieldOptional,
   UUIDField,
 } from '../../../decorators/field.decorators.ts';
-import { AuditAction, type AuditLog } from '../entities/audit-log.entity.ts';
+import type { AuditLog } from '../entities/audit-log.entity.ts';
 
 export class AuditLogDto extends AbstractDto {
-  @EnumField(() => AuditAction)
-  action!: AuditAction;
+  @StringField()
+  action!: string;
 
   @StringFieldOptional()
-  entityType!: string;
+  entityType?: string;
 
   @UUIDField({ nullable: true })
-  entityId!: string | null;
+  entityId?: string | null;
 
   @UUIDField({ nullable: true })
-  userId!: string | null;
+  userId?: string | null;
 
   @UUIDField({ nullable: true })
-  adminId!: string | null;
+  adminId?: string | null;
 
   @StringFieldOptional()
-  ipAddress!: string | null;
+  ipAddress?: string | null;
 
   @StringFieldOptional()
-  userAgent!: string | null;
+  userAgent?: string | null;
 
-  metadata!: Record<string, any> | null;
+  metadata?: Record<string, any> | null;
 
   constructor(auditLog: AuditLog) {
     super(auditLog);
