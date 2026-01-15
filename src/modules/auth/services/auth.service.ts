@@ -42,6 +42,12 @@ export interface LoginResponse {
     roleType: string;
     roles?: string[];
   };
+  ability?: Array<{
+    name: string;
+    description?: string;
+    action: string | string[];
+    subject: string | string[];
+  }>;
 }
 
 @Injectable()
@@ -155,9 +161,21 @@ export class AuthService {
     }
 
     // Get roles and permissions
-    const { roles, permissions } = await this.getAdminRolesAndPermissions(
-      admin.id,
-    );
+    const { roles, permissions, permissionDetails } =
+      await this.getAdminRolesAndPermissions(admin.id);
+
+    // Format ability array - flatten actions and subjects for each permission
+    const ability = permissionDetails.map((perm) => {
+      const action = perm.actions.length === 1 ? perm.actions[0] : perm.actions;
+      const subject =
+        perm.subjects.length === 1 ? perm.subjects[0] : perm.subjects;
+
+      return {
+        name: perm.name,
+        action: action || [],
+        subject: subject || [],
+      };
+    });
 
     // Determine message based on role
     const isSuperAdmin = roles.some((role) =>
@@ -186,6 +204,7 @@ export class AuthService {
         roleType: admin.roleType,
         roles,
       },
+      ability,
     };
   }
 
@@ -219,6 +238,12 @@ export class AuthService {
   private async getAdminRolesAndPermissions(adminId: string): Promise<{
     roles: string[];
     permissions: Array<{ actions: string[]; subjects: string[] }>;
+    permissionDetails: Array<{
+      name: string;
+      description?: string;
+      actions: string[];
+      subjects: string[];
+    }>;
   }> {
     const adminRoles = await this.adminRoleRepository.find({
       where: { adminId },
@@ -246,6 +271,14 @@ export class AuthService {
             subjects: ['*'], // Wildcard for all subjects
           },
         ],
+        permissionDetails: [
+          {
+            name: 'Super Admin',
+            description: 'Full system access',
+            actions: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
+            subjects: ['*'],
+          },
+        ],
       };
     }
 
@@ -253,6 +286,16 @@ export class AuthService {
     const permissionsMap = new Map<
       string,
       { actions: string[]; subjects: string[] }
+    >();
+
+    const permissionDetailsMap = new Map<
+      string,
+      {
+        name: string;
+        description?: string;
+        actions: string[];
+        subjects: string[];
+      }
     >();
 
     adminRoles.forEach((ar) => {
@@ -263,6 +306,12 @@ export class AuthService {
             actions: rp.permission.actions,
             subjects: rp.permission.subjects,
           });
+          permissionDetailsMap.set(key, {
+            name: rp.permission.name,
+            description: rp.permission.description,
+            actions: rp.permission.actions,
+            subjects: rp.permission.subjects,
+          });
         }
       });
     });
@@ -270,6 +319,7 @@ export class AuthService {
     return {
       roles,
       permissions: Array.from(permissionsMap.values()),
+      permissionDetails: Array.from(permissionDetailsMap.values()),
     };
   }
 

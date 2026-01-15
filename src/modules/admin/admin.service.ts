@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
@@ -17,6 +18,8 @@ import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { OfficeLocation } from '../office-location/entities/office-location.entity';
 import { Agency } from '../agency/entities/agency.entity';
+
+const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class AdminService {
@@ -117,7 +120,16 @@ export class AdminService {
       }
     }
 
-    const admin = this.adminRepository.create(createAdminDto);
+    // 10. Hash the password before saving
+    const hashedPassword = await bcrypt.hash(
+      createAdminDto.password,
+      BCRYPT_ROUNDS,
+    );
+
+    const admin = this.adminRepository.create({
+      ...createAdminDto,
+      password: hashedPassword,
+    });
     return this.adminRepository.save(admin);
   }
 
@@ -228,6 +240,14 @@ export class AdminService {
           `Admin with CID "${updateAdminDto.cidNo}" already exists`,
         );
       }
+    }
+
+    // Hash password if it's being updated
+    if (updateAdminDto.password) {
+      updateAdminDto.password = await bcrypt.hash(
+        updateAdminDto.password,
+        BCRYPT_ROUNDS,
+      );
     }
 
     Object.assign(admin, updateAdminDto);
