@@ -64,10 +64,11 @@ export class UsersService {
       });
     }
 
-    queryBuilder
-      .orderBy('user.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    if (queryDto.order) {
+      queryBuilder.orderBy('user.createdAt', queryDto.order as 'ASC' | 'DESC');
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 

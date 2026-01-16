@@ -10,21 +10,37 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
 import { FilterRoleDto } from './dto/filter-role.dto';
 import { AssignPermissionDto } from './dto/assign-permission.dto';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { RoleType } from '../../constants/role-type.ts';
 
 @Controller('roles')
 @ApiTags('Roles')
+@ApiBearerAuth()
+@UseGuards(AuthGuard(), RolesGuard, PermissionsGuard)
+@Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
+  @RequirePermission('create', 'Role')
   @ApiOperation({ summary: 'Create a new role' })
   @ApiResponse({ status: 201, description: 'Role created successfully' })
   @ApiResponse({
@@ -40,6 +56,7 @@ export class RolesController {
   }
 
   @Get()
+  @RequirePermission('read', 'Role')
   @ApiOperation({ summary: 'Get all roles with pagination' })
   @ApiResponse({ status: 200, description: 'Returns paginated roles' })
   findAll(@Query() queryDto: QueryRoleDto) {
@@ -47,6 +64,7 @@ export class RolesController {
   }
 
   @Get('search/filter')
+  @RequirePermission('read', 'Role')
   @ApiOperation({ summary: 'Filter roles by criteria' })
   @ApiResponse({ status: 200, description: 'Returns filtered roles' })
   filter(@Query() filterDto: FilterRoleDto) {
@@ -54,6 +72,7 @@ export class RolesController {
   }
 
   @Get(':id')
+  @RequirePermission('read', 'Role')
   @ApiOperation({ summary: 'Get role by ID with permissions' })
   @ApiResponse({ status: 200, description: 'Returns role' })
   @ApiResponse({ status: 404, description: 'Role not found' })
@@ -62,6 +81,7 @@ export class RolesController {
   }
 
   @Patch(':id')
+  @RequirePermission('update', 'Role')
   @ApiOperation({ summary: 'Update role' })
   @ApiResponse({ status: 200, description: 'Role updated successfully' })
   update(
@@ -73,6 +93,7 @@ export class RolesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission('delete', 'Role')
   @ApiOperation({ summary: 'Delete role' })
   @ApiResponse({ status: 204, description: 'Role deleted successfully' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {

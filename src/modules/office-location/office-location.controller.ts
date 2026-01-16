@@ -10,20 +10,36 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { OfficeLocationService } from './office-location.service';
 import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
 import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
 import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
 import { FilterOfficeLocationDto } from './dto/filter-office-location.dto';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { RoleType } from '../../constants/role-type.ts';
 
 @Controller('office-locations')
 @ApiTags('Office Locations')
+@ApiBearerAuth()
+@UseGuards(AuthGuard(), RolesGuard, PermissionsGuard)
+@Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
 export class OfficeLocationController {
   constructor(private readonly officeLocationService: OfficeLocationService) {}
 
   @Post()
+  @RequirePermission('create', 'OfficeLocation')
   @ApiOperation({ summary: 'Create a new office location' })
   @ApiResponse({
     status: 201,
@@ -42,6 +58,7 @@ export class OfficeLocationController {
   }
 
   @Get()
+  @RequirePermission('read', 'OfficeLocation')
   @ApiOperation({ summary: 'Get all office locations with pagination' })
   @ApiResponse({
     status: 200,
@@ -52,6 +69,7 @@ export class OfficeLocationController {
   }
 
   @Get('search/filter')
+  @RequirePermission('read', 'OfficeLocation')
   @ApiOperation({ summary: 'Filter office locations by criteria' })
   @ApiResponse({
     status: 200,
@@ -62,6 +80,7 @@ export class OfficeLocationController {
   }
 
   @Get(':id')
+  @RequirePermission('read', 'OfficeLocation')
   @ApiOperation({ summary: 'Get office location by ID' })
   @ApiResponse({ status: 200, description: 'Returns office location' })
   @ApiResponse({ status: 404, description: 'Office location not found' })
@@ -70,6 +89,7 @@ export class OfficeLocationController {
   }
 
   @Patch(':id')
+  @RequirePermission('update', 'OfficeLocation')
   @ApiOperation({ summary: 'Update office location' })
   @ApiResponse({
     status: 200,
@@ -84,6 +104,7 @@ export class OfficeLocationController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission('delete', 'OfficeLocation')
   @ApiOperation({ summary: 'Delete office location' })
   @ApiResponse({
     status: 204,

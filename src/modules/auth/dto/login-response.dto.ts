@@ -21,6 +21,9 @@ export class LoginResponseDto {
   @ApiProperty()
   accessToken!: string;
 
+  @ApiProperty()
+  refreshToken!: string;
+
   @ApiProperty({ type: UserInfo })
   user!: UserInfo;
 }

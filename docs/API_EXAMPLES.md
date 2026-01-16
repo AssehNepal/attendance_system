@@ -2,7 +2,13 @@
 
 ## Complete API Examples with cURL
 
----
+## to create super admin run:
+
+## yarn create-superadmin
+
+to login as super admin run:
+
+## yarn create-superadmin
 
 ## Authentication Endpoints
 

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
@@ -50,14 +54,21 @@ export class AdminRoleService {
       });
     }
 
-    queryBuilder
-      .orderBy('adminRole.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    if (queryDto.order) {
+      queryBuilder.orderBy(
+        'adminRole.createdAt',
+        queryDto.order as 'ASC' | 'DESC',
+      );
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto: queryDto });
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: queryDto,
+    });
 
     return new PageDto(entities, pageMetaDto);
   }
@@ -69,7 +80,9 @@ export class AdminRoleService {
     });
 
     if (!adminRole) {
-      throw new NotFoundException(`Admin-Role assignment with ID "${id}" not found`);
+      throw new NotFoundException(
+        `Admin-Role assignment with ID "${id}" not found`,
+      );
     }
 
     return adminRole;
@@ -116,7 +129,11 @@ export class AdminRoleService {
   async findByAdminId(adminId: Uuid): Promise<AdminRole[]> {
     return this.adminRoleRepository.find({
       where: { adminId },
-      relations: ['role', 'role.rolePermissions', 'role.rolePermissions.permission'],
+      relations: [
+        'role',
+        'role.rolePermissions',
+        'role.rolePermissions.permission',
+      ],
     });
   }
 

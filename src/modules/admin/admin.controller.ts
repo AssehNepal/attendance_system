@@ -10,21 +10,37 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { QueryAdminDto } from './dto/query-admin.dto';
 import { FilterAdminDto } from './dto/filter-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { RoleType } from '../../constants/role-type.ts';
 
 @Controller('admin')
 @ApiTags('Admin')
+@ApiBearerAuth()
+@UseGuards(AuthGuard(), RolesGuard, PermissionsGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Post()
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('create', 'Admin')
   @ApiOperation({ summary: 'Create a new admin (super admin only)' })
   @ApiResponse({ status: 201, description: 'Admin created successfully' })
   @ApiResponse({
@@ -45,6 +61,8 @@ export class AdminController {
   }
 
   @Get()
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('read', 'Admin')
   @ApiOperation({ summary: 'Get all admins with pagination' })
   @ApiResponse({ status: 200, description: 'Returns paginated admins' })
   findAll(@Query() queryDto: QueryAdminDto) {
@@ -52,6 +70,8 @@ export class AdminController {
   }
 
   @Get('search/filter')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('read', 'Admin')
   @ApiOperation({ summary: 'Filter admins by criteria' })
   @ApiResponse({ status: 200, description: 'Returns filtered admins' })
   filter(@Query() filterDto: FilterAdminDto) {
@@ -59,6 +79,8 @@ export class AdminController {
   }
 
   @Get(':id')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('read', 'Admin')
   @ApiOperation({ summary: 'Get admin by ID' })
   @ApiResponse({ status: 200, description: 'Returns admin' })
   @ApiResponse({ status: 404, description: 'Admin not found' })
@@ -67,6 +89,8 @@ export class AdminController {
   }
 
   @Patch(':id')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('update', 'Admin')
   @ApiOperation({ summary: 'Update admin' })
   @ApiResponse({ status: 200, description: 'Admin updated successfully' })
   update(
@@ -78,6 +102,8 @@ export class AdminController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('delete', 'Admin')
   @ApiOperation({ summary: 'Delete admin' })
   @ApiResponse({ status: 204, description: 'Admin deleted successfully' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
@@ -85,6 +111,8 @@ export class AdminController {
   }
 
   @Post(':id/assign-role')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('update', 'Admin')
   @ApiOperation({ summary: 'Assign role to admin' })
   @ApiResponse({ status: 201, description: 'Role assigned successfully' })
   @ApiResponse({ status: 409, description: 'Role already assigned' })

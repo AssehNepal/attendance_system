@@ -83,10 +83,14 @@ export class PermissionsService {
       });
     }
 
-    queryBuilder
-      .orderBy('permission.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    if (queryDto.order) {
+      queryBuilder.orderBy(
+        'permission.createdAt',
+        queryDto.order as 'ASC' | 'DESC',
+      );
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 

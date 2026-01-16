@@ -18,6 +18,7 @@ import { OfficeLocation } from './entities/office-location.entity.ts';
 import { Permission } from './entities/permission.entity.ts';
 import { Role } from './entities/role.entity.ts';
 import { RolePermission } from './entities/role-permission.entity.ts';
+import { RefreshToken } from './entities/refresh-token.entity.ts';
 import { User } from '../users/entities/user.entity.ts';
 import { SeedService } from './services/seed.service.ts';
 
@@ -31,6 +32,7 @@ import { SeedService } from './services/seed.service.ts';
       Permission,
       Role,
       RolePermission,
+      RefreshToken,
     ]),
     forwardRef(() => UsersModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),

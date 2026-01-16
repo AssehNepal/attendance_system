@@ -137,6 +137,7 @@ export class AdminService {
     const queryBuilder = this.adminRepository
       .createQueryBuilder('admin')
       .leftJoinAndSelect('admin.officeLocation', 'officeLocation')
+      .leftJoinAndSelect('admin.agency', 'agency')
       .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
       .leftJoinAndSelect('adminRoles.role', 'role');
 
@@ -158,10 +159,12 @@ export class AdminService {
       });
     }
 
-    queryBuilder
-      .orderBy('admin.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    // Apply ordering - use 'ASC' | 'DESC' explicitly
+    if (queryDto.order) {
+      queryBuilder.orderBy('admin.createdAt', queryDto.order as 'ASC' | 'DESC');
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
@@ -190,6 +193,7 @@ export class AdminService {
     const queryBuilder = this.adminRepository
       .createQueryBuilder('admin')
       .leftJoinAndSelect('admin.officeLocation', 'officeLocation')
+      .leftJoinAndSelect('admin.agency', 'agency')
       .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
       .leftJoinAndSelect('adminRoles.role', 'role');
 

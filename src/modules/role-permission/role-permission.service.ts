@@ -90,10 +90,14 @@ export class RolePermissionService {
       });
     }
 
-    queryBuilder
-      .orderBy('rolePermission.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    if (queryDto.order) {
+      queryBuilder.orderBy(
+        'rolePermission.createdAt',
+        queryDto.order as 'ASC' | 'DESC',
+      );
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 

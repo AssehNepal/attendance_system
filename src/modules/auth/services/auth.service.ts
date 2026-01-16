@@ -18,24 +18,29 @@ import { AdminRole } from '../entities/admin-role.entity';
 import { RolePermission } from '../entities/role-permission.entity';
 import { OfficeLocation } from '../entities/office-location.entity';
 import { Agency } from '../../agency/entities/agency.entity';
+import { RefreshToken } from '../entities/refresh-token.entity';
+import { TokenType } from '../../../constants/token-type.ts';
 import type { UserLoginDto } from '../dto/user-login.dto';
 import type { AdminLoginDto } from '../dto/admin-login.dto';
 import type { CreateAdminDto } from '../dto/create-admin.dto';
+import { randomBytes } from 'node:crypto';
 
 const BCRYPT_ROUNDS = 12;
 
 interface JwtPayload {
-  userId: string;
+  userId: Uuid;
   cidNo: string;
-  roleType: 'CITIZEN' | 'ADMIN';
+  roleType: 'CITIZEN' | 'ADMIN' | 'SUPER_ADMIN';
+  type: TokenType;
   roles?: string[];
   permissions?: Array<{ actions: string[]; subjects: string[] }>;
-  officeLocationId?: string;
+  officeLocationId?: Uuid;
 }
 
 export interface LoginResponse {
   message: string;
   accessToken: string;
+  refreshToken: string;
   user: {
     id: string;
     cidNo: string;
@@ -68,6 +73,8 @@ export class AuthService {
     private readonly officeLocationRepository: Repository<OfficeLocation>,
     @InjectRepository(Agency)
     private readonly agencyRepository: Repository<Agency>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -76,7 +83,11 @@ export class AuthService {
    * Auto-creates user on first login
    * Citizens don't have roles/permissions - only store their data
    */
-  async loginCitizen(loginDto: UserLoginDto): Promise<LoginResponse> {
+  async loginCitizen(
+    loginDto: UserLoginDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<LoginResponse> {
     const { cidNo, password, ndiDeeplink } = loginDto;
 
     // Validate that at least password or NDI deeplink is provided
@@ -107,16 +118,30 @@ export class AuthService {
       }
     }
 
-    // Generate JWT for citizen (no roles/permissions)
+    // Generate access token (15 minutes)
     const accessToken = await this.generateAccessToken({
       userId: user.id,
       cidNo: user.cidNo,
       roleType: 'CITIZEN',
+      type: TokenType.ACCESS_TOKEN,
     });
+
+    // Generate refresh token (3 months)
+    const refreshToken = await this.generateRefreshToken(user.id, 'CITIZEN');
+
+    // Store refresh token
+    await this.storeRefreshToken(
+      refreshToken,
+      user.id,
+      'CITIZEN',
+      ipAddress,
+      userAgent,
+    );
 
     return {
       message: 'Logged in successfully as Citizen',
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         cidNo: user.cidNo,
@@ -129,7 +154,11 @@ export class AuthService {
    * ADMIN LOGIN
    * Requires pre-registration by SUPER ADMIN
    */
-  async loginAdmin(loginDto: AdminLoginDto): Promise<LoginResponse> {
+  async loginAdmin(
+    loginDto: AdminLoginDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<LoginResponse> {
     const admin = await this.adminRepository.findOne({
       where: { cidNo: loginDto.cidNo },
       relations: [
@@ -160,7 +189,46 @@ export class AuthService {
       await this.adminRepository.save(admin);
     }
 
-    // Get roles and permissions
+    // Check if SUPER_ADMIN (bypass role/permission checks)
+    if (admin.roleType === 'SUPER_ADMIN') {
+      // Generate access token (15 minutes)
+      const accessToken = await this.generateAccessToken({
+        userId: admin.id,
+        cidNo: admin.cidNo,
+        roleType: 'SUPER_ADMIN',
+        type: TokenType.ACCESS_TOKEN,
+        roles: [],
+        permissions: [],
+        officeLocationId: admin.officeLocationId as Uuid,
+      });
+
+      // Generate refresh token (3 months)
+      const refreshToken = await this.generateRefreshToken(admin.id, 'ADMIN');
+
+      // Store refresh token
+      await this.storeRefreshToken(
+        refreshToken,
+        admin.id,
+        'ADMIN',
+        ipAddress,
+        userAgent,
+      );
+
+      return {
+        message: 'Logged in successfully as Super Admin',
+        accessToken,
+        refreshToken,
+        user: {
+          id: admin.id,
+          cidNo: admin.cidNo,
+          roleType: admin.roleType,
+          roles: [],
+        },
+        ability: [], // SUPER_ADMIN has no restrictions, empty ability array
+      };
+    }
+
+    // Regular ADMIN - Get roles and permissions
     const { roles, permissions, permissionDetails } =
       await this.getAdminRolesAndPermissions(admin.id);
 
@@ -177,27 +245,33 @@ export class AuthService {
       };
     });
 
-    // Determine message based on role
-    const isSuperAdmin = roles.some((role) =>
-      role.toLowerCase().includes('super'),
-    );
-    const message = isSuperAdmin
-      ? 'Logged in successfully as Super Admin'
-      : 'Logged in successfully as Admin';
-
-    // Generate JWT
+    // Generate access token (15 minutes)
     const accessToken = await this.generateAccessToken({
       userId: admin.id,
       cidNo: admin.cidNo,
       roleType: 'ADMIN',
+      type: TokenType.ACCESS_TOKEN,
       roles,
       permissions,
-      officeLocationId: admin.officeLocationId,
+      officeLocationId: admin.officeLocationId as Uuid,
     });
 
+    // Generate refresh token (3 months)
+    const refreshToken = await this.generateRefreshToken(admin.id, 'ADMIN');
+
+    // Store refresh token
+    await this.storeRefreshToken(
+      refreshToken,
+      admin.id,
+      'ADMIN',
+      ipAddress,
+      userAgent,
+    );
+
     return {
-      message,
+      message: 'Logged in successfully as Admin',
       accessToken,
+      refreshToken,
       user: {
         id: admin.id,
         cidNo: admin.cidNo,
@@ -328,7 +402,7 @@ export class AuthService {
    */
   private async generateAccessToken(payload: JwtPayload): Promise<string> {
     return this.jwtService.signAsync(payload, {
-      expiresIn: '24h',
+      expiresIn: '15m', // 15 minutes
     });
   }
 
@@ -480,6 +554,220 @@ export class AuthService {
       const hasSubject = hasWildcard || perm.subjects.includes(requiredSubject);
       const hasAction = perm.actions.includes(requiredAction);
       return hasSubject && hasAction;
+    });
+  }
+
+  /**
+   * GENERATE REFRESH TOKEN (3 months expiry)
+   */
+  private async generateRefreshToken(
+    userId: Uuid,
+    userType: 'CITIZEN' | 'ADMIN',
+  ): Promise<string> {
+    const jti = randomBytes(32).toString('hex');
+
+    const payload = {
+      userId,
+      userType,
+      type: TokenType.REFRESH_TOKEN,
+      jti, // unique token ID
+    };
+
+    // 3 months = 90 days
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      expiresIn: '90d',
+    });
+
+    return refreshToken;
+  }
+
+  /**
+   * STORE REFRESH TOKEN
+   */
+  private async storeRefreshToken(
+    token: string,
+    userId: Uuid,
+    userType: 'CITIZEN' | 'ADMIN',
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 90); // 3 months
+
+    await this.refreshTokenRepository.save({
+      token,
+      userId: userType === 'CITIZEN' ? userId : null,
+      adminId: userType === 'ADMIN' ? userId : null,
+      expiresAt,
+      isRevoked: false,
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null,
+    });
+  }
+
+  /**
+   * REFRESH ACCESS TOKEN (with rotation)
+   * - Validates refresh token
+   * - Generates new access token
+   * - Generates new refresh token
+   * - Revokes old refresh token
+   */
+  async refreshAccessToken(
+    refreshToken: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    // 1. Verify refresh token signature
+    let payload: any;
+    try {
+      payload = await this.jwtService.verifyAsync(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // 2. Check token type
+    if (payload.type !== TokenType.REFRESH_TOKEN) {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    // 3. Check if token exists and is not revoked
+    const storedToken = await this.refreshTokenRepository.findOne({
+      where: { token: refreshToken },
+    });
+
+    if (!storedToken) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+
+    if (storedToken.isRevoked) {
+      throw new UnauthorizedException('Refresh token has been revoked');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token has expired');
+    }
+
+    // 4. Load fresh user data with latest permissions
+    const { userId, userType } = payload;
+
+    let accessTokenPayload: JwtPayload;
+    let newAccessToken: string;
+
+    if (userType === 'CITIZEN') {
+      const user = await this.usersService.findOne(userId);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      accessTokenPayload = {
+        userId: user.id,
+        cidNo: user.cidNo,
+        roleType: 'CITIZEN',
+        type: TokenType.ACCESS_TOKEN,
+      };
+
+      newAccessToken = await this.generateAccessToken(accessTokenPayload);
+    } else {
+      // ADMIN or SUPER_ADMIN
+      const admin = await this.adminRepository.findOne({
+        where: { id: userId },
+        relations: [
+          'adminRoles',
+          'adminRoles.role',
+          'adminRoles.role.rolePermissions',
+          'adminRoles.role.rolePermissions.permission',
+        ],
+      });
+
+      if (!admin) {
+        throw new UnauthorizedException('Admin not found');
+      }
+
+      if (admin.roleType === 'SUPER_ADMIN') {
+        accessTokenPayload = {
+          userId: admin.id,
+          cidNo: admin.cidNo,
+          roleType: 'SUPER_ADMIN',
+          type: TokenType.ACCESS_TOKEN,
+          roles: [],
+          permissions: [],
+          officeLocationId: admin.officeLocationId as Uuid,
+        };
+      } else {
+        const { roles, permissions } = await this.getAdminRolesAndPermissions(
+          admin.id,
+        );
+
+        accessTokenPayload = {
+          userId: admin.id,
+          cidNo: admin.cidNo,
+          roleType: 'ADMIN',
+          type: TokenType.ACCESS_TOKEN,
+          roles,
+          permissions,
+          officeLocationId: admin.officeLocationId as Uuid,
+        };
+      }
+
+      newAccessToken = await this.generateAccessToken(accessTokenPayload);
+    }
+
+    // 5. Generate new refresh token
+    const newRefreshToken = await this.generateRefreshToken(userId, userType);
+
+    // 6. Store new refresh token
+    await this.storeRefreshToken(
+      newRefreshToken,
+      userId,
+      userType,
+      ipAddress,
+      userAgent,
+    );
+
+    // 7. Revoke old refresh token (rotation)
+    await this.refreshTokenRepository.update(
+      { token: refreshToken },
+      { isRevoked: true },
+    );
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
+  }
+
+  /**
+   * LOGOUT (revoke refresh token)
+   */
+  async logout(refreshToken: string): Promise<void> {
+    const storedToken = await this.refreshTokenRepository.findOne({
+      where: { token: refreshToken },
+    });
+
+    if (!storedToken) {
+      throw new NotFoundException('Refresh token not found');
+    }
+
+    await this.refreshTokenRepository.update(
+      { token: refreshToken },
+      { isRevoked: true },
+    );
+  }
+
+  /**
+   * LOGOUT ALL DEVICES (revoke all user's refresh tokens)
+   */
+  async logoutAllDevices(
+    userId: Uuid,
+    userType: 'CITIZEN' | 'ADMIN',
+  ): Promise<void> {
+    const whereCondition =
+      userType === 'CITIZEN'
+        ? { userId, isRevoked: false }
+        : { adminId: userId, isRevoked: false };
+
+    await this.refreshTokenRepository.update(whereCondition, {
+      isRevoked: true,
     });
   }
 }

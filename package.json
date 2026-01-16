@@ -24,6 +24,7 @@
     "migration:run": "typeorm-ts-node-esm migration:run -d ormconfig.ts",
     "migration:create": "yarn run typeorm migration:create -d ormconfig.ts",
     "seed": "node --loader ts-node/esm src/seed.ts",
+    "create-superadmin": "node --loader ts-node/esm scripts/create-superadmin.ts",
     "generate": "nest g -c awesome-nestjs-schematics --no-spec",
     "generate:simple": "nest g --no-spec",
     "generate:custom": "node scripts/generate-module.js",

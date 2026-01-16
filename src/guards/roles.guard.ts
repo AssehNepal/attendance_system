@@ -15,6 +15,7 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
     );
 
+    // If no roles are required, allow access
     if (!roles?.length) {
       return true;
     }
@@ -22,6 +23,16 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{ user: UserEntity }>();
     const user = request.user;
 
+    if (!user) {
+      return false;
+    }
+
+    // 🔓 SUPER_ADMIN bypass - Full access regardless of required roles
+    if (user.roleType === 'SUPER_ADMIN') {
+      return true;
+    }
+
+    // Check if user's roleType is in the required roles
     return roles.includes(user.roleType as RoleType);
   }
 }

@@ -23,6 +23,7 @@ export class PermissionsGuard implements CanActivate {
         context.getClass(),
       ]);
 
+    // If no permission is required, allow access
     if (!requiredPermission) {
       return true;
     }
@@ -30,14 +31,31 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user || !user.permissions) {
+    if (!user) {
       return false;
     }
 
-    return user.permissions.some(
-      (p: { action: string; subject: string }) =>
-        p.action === requiredPermission.action &&
-        p.subject === requiredPermission.subject,
-    );
+    // 🔓 SUPER_ADMIN bypass - Full access to all endpoints
+    if (user.roleType === 'SUPER_ADMIN') {
+      return true;
+    }
+
+    // For regular users/admins, check permissions from ability array
+    if (!user.ability || !Array.isArray(user.ability)) {
+      return false;
+    }
+
+    // Check if user has the required permission in their ability array
+    return user.ability.some((ability: any) => {
+      const hasAction = Array.isArray(ability.action)
+        ? ability.action.includes(requiredPermission.action)
+        : ability.action === requiredPermission.action;
+
+      const hasSubject = Array.isArray(ability.subject)
+        ? ability.subject.includes(requiredPermission.subject)
+        : ability.subject === requiredPermission.subject;
+
+      return hasAction && hasSubject;
+    });
   }
 }

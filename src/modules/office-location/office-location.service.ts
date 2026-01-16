@@ -63,10 +63,14 @@ export class OfficeLocationService {
       });
     }
 
-    queryBuilder
-      .orderBy('officeLocation.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    if (queryDto.order) {
+      queryBuilder.orderBy(
+        'officeLocation.createdAt',
+        queryDto.order as 'ASC' | 'DESC',
+      );
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 

@@ -115,6 +115,24 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
       )
     `);
 
+    // Create refresh_tokens table
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "refresh_tokens" (
+        "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+        "created_at" TIMESTAMP NOT NULL DEFAULT now(),
+        "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
+        "token" text NOT NULL,
+        "user_id" uuid,
+        "admin_id" uuid,
+        "expires_at" TIMESTAMP NOT NULL,
+        "is_revoked" boolean NOT NULL DEFAULT false,
+        "ip_address" character varying(50),
+        "user_agent" text,
+        CONSTRAINT "UQ_refresh_tokens_token" UNIQUE ("token"),
+        CONSTRAINT "PK_refresh_tokens" PRIMARY KEY ("id")
+      )
+    `);
+
     // Add foreign keys (with IF NOT EXISTS check)
     await queryRunner.query(`
       DO $$
@@ -206,6 +224,36 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
       END $$;
     `);
 
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'FK_refresh_tokens_user'
+        ) THEN
+          ALTER TABLE "refresh_tokens"
+          ADD CONSTRAINT "FK_refresh_tokens_user"
+          FOREIGN KEY ("user_id")
+          REFERENCES "users"("id")
+          ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'FK_refresh_tokens_admin'
+        ) THEN
+          ALTER TABLE "refresh_tokens"
+          ADD CONSTRAINT "FK_refresh_tokens_admin"
+          FOREIGN KEY ("admin_id")
+          REFERENCES "admin"("id")
+          ON DELETE CASCADE;
+        END IF;
+      END $$;
+    `);
+
     // Create indexes for performance (with IF NOT EXISTS)
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "IDX_admin_cid_no" ON "admin" ("cid_no")
@@ -214,12 +262,46 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "IDX_users_cid_no" ON "users" ("cid_no")
     `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_refresh_tokens_token" ON "refresh_tokens" ("token")
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_refresh_tokens_user_id" ON "refresh_tokens" ("user_id")
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_refresh_tokens_admin_id" ON "refresh_tokens" ("admin_id")
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "IDX_refresh_tokens_expires_at" ON "refresh_tokens" ("expires_at")
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop all indexes
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_refresh_tokens_expires_at"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_refresh_tokens_admin_id"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_refresh_tokens_user_id"`,
+    );
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_refresh_tokens_token"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_users_cid_no"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_admin_cid_no"`);
+
+    // Drop all foreign keys for refresh_tokens
+    await queryRunner.query(`
+      ALTER TABLE "refresh_tokens" DROP CONSTRAINT IF EXISTS "FK_refresh_tokens_admin"
+    `);
+    await queryRunner.query(`
+      ALTER TABLE "refresh_tokens" DROP CONSTRAINT IF EXISTS "FK_refresh_tokens_user"
+    `);
 
     // Drop all foreign keys for auth tables
     await queryRunner.query(`
@@ -242,6 +324,7 @@ export class InitialAuthSchema1705075200000 implements MigrationInterface {
     `);
 
     // Drop all auth tables in correct order
+    await queryRunner.query(`DROP TABLE IF EXISTS "refresh_tokens"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "admin_role"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "role_permission"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "admin"`);

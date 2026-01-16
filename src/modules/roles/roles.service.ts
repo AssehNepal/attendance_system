@@ -67,10 +67,11 @@ export class RolesService {
       });
     }
 
-    queryBuilder
-      .orderBy('role.created_at', queryDto.order)
-      .skip(queryDto.skip)
-      .take(queryDto.take);
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+
+    if (queryDto.order) {
+      queryBuilder.orderBy('role.createdAt', queryDto.order as 'ASC' | 'DESC');
+    }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 

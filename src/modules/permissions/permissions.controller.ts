@@ -10,20 +10,36 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { QueryPermissionDto } from './dto/query-permission.dto';
 import { FilterPermissionDto } from './dto/filter-permission.dto';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { RoleType } from '../../constants/role-type.ts';
 
 @Controller('permissions')
 @ApiTags('Permissions')
+@ApiBearerAuth()
+@UseGuards(AuthGuard(), RolesGuard, PermissionsGuard)
+@Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
   @Post()
+  @RequirePermission('create', 'Permission')
   @ApiOperation({ summary: 'Create a new permission' })
   @ApiResponse({ status: 201, description: 'Permission created successfully' })
   @ApiResponse({
@@ -40,6 +56,7 @@ export class PermissionsController {
   }
 
   @Get()
+  @RequirePermission('read', 'Permission')
   @ApiOperation({ summary: 'Get all permissions with pagination' })
   @ApiResponse({ status: 200, description: 'Returns paginated permissions' })
   findAll(@Query() queryDto: QueryPermissionDto) {
@@ -47,6 +64,7 @@ export class PermissionsController {
   }
 
   @Get('search/filter')
+  @RequirePermission('read', 'Permission')
   @ApiOperation({ summary: 'Filter permissions by criteria' })
   @ApiResponse({ status: 200, description: 'Returns filtered permissions' })
   filter(@Query() filterDto: FilterPermissionDto) {
@@ -54,6 +72,7 @@ export class PermissionsController {
   }
 
   @Get(':id')
+  @RequirePermission('read', 'Permission')
   @ApiOperation({ summary: 'Get permission by ID' })
   @ApiResponse({ status: 200, description: 'Returns permission' })
   @ApiResponse({ status: 404, description: 'Permission not found' })
@@ -62,6 +81,7 @@ export class PermissionsController {
   }
 
   @Patch(':id')
+  @RequirePermission('update', 'Permission')
   @ApiOperation({ summary: 'Update permission' })
   @ApiResponse({ status: 200, description: 'Permission updated successfully' })
   update(
@@ -73,6 +93,7 @@ export class PermissionsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission('delete', 'Permission')
   @ApiOperation({ summary: 'Delete permission' })
   @ApiResponse({ status: 204, description: 'Permission deleted successfully' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {

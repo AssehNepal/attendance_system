@@ -5,7 +5,7 @@ import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import type { User } from '../../users/entities/user.entity.ts';
 import type { Admin } from './admin.entity.ts';
 
-@Entity({ name: 'refresh_token' })
+@Entity({ name: 'refresh_tokens' })
 @UseDto(RefreshTokenDto)
 export class RefreshToken extends AbstractEntity<RefreshTokenDto> {
   @Column({ type: 'text', name: 'token' })
