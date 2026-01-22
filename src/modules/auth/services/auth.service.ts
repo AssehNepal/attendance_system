@@ -88,6 +88,11 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<LoginResponse> {
+    console.log(
+      '🔍 [loginCitizen] Processing citizen login for CID:',
+      loginDto.cidNo,
+    );
+
     const { cidNo, password, ndiDeeplink } = loginDto;
 
     // Validate that at least password or NDI deeplink is provided
@@ -159,6 +164,11 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<LoginResponse> {
+    console.log(
+      '🔍 [loginAdmin] Searching for admin with CID:',
+      loginDto.cidNo,
+    );
+
     const admin = await this.adminRepository.findOne({
       where: { cidNo: loginDto.cidNo },
       relations: [
@@ -170,8 +180,15 @@ export class AuthService {
     });
 
     if (!admin) {
+      console.log('❌ [loginAdmin] Admin not found in admin table');
       throw new UnauthorizedException('Admin not found. Contact Super Admin.');
     }
+
+    console.log('✅ [loginAdmin] Found admin:', {
+      id: admin.id,
+      cidNo: admin.cidNo,
+      roleType: admin.roleType,
+    });
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(
@@ -488,6 +505,13 @@ export class AuthService {
       BCRYPT_ROUNDS,
     );
 
+    // 4.5. Check if any role is SUPER_ADMIN
+    const isSuperAdmin = roles.some(
+      (role) =>
+        role.name.toUpperCase().includes('SUPER') ||
+        role.name.toUpperCase().includes('SUPERADMIN'),
+    );
+
     // 5. Create Admin entity
     const admin = await this.adminRepository.save({
       cidNo: createAdminDto.cidNo,
@@ -495,7 +519,7 @@ export class AuthService {
       email: createAdminDto.email,
       mobileNo: createAdminDto.mobileNo,
       agencyId: createAdminDto.agencyId,
-      roleType: 'ADMIN', // Default role type
+      roleType: isSuperAdmin ? 'SUPER_ADMIN' : 'ADMIN',
       officeLocationId: officeLocation.id,
     });
 
