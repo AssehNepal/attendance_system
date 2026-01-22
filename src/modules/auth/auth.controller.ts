@@ -58,55 +58,55 @@ export class AuthController {
     return this.authService.loginAdmin(adminLoginDto, ipAddress, userAgent);
   }
 
-  @Post('admin/create')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles([RoleType.ADMIN, RoleType.SUPER_ADMIN])
-  @RequirePermission('create', 'Admin')
-  @ApiCreatedResponse({
-    type: AdminCreatedResponseDto,
-    description: 'Create a new admin user with roles and permissions',
-  })
-  async createAdmin(
-    @Body() createAdminDto: CreateAdminDto,
-  ): Promise<AdminCreatedResponseDto> {
-    const result = await this.authService.createAdmin(createAdminDto);
+  //   @Post('admin/create')
+  //   @HttpCode(HttpStatus.CREATED)
+  //   @Roles([RoleType.ADMIN, RoleType.SUPER_ADMIN])
+  //   @RequirePermission('create', 'Admin')
+  //   @ApiCreatedResponse({
+  //     type: AdminCreatedResponseDto,
+  //     description: 'Create a new admin user with roles and permissions',
+  //   })
+  //   async createAdmin(
+  //     @Body() createAdminDto: CreateAdminDto,
+  //   ): Promise<AdminCreatedResponseDto> {
+  //     const result = await this.authService.createAdmin(createAdminDto);
 
-    // Load office location details
-    const adminWithOffice = await this.authService['adminRepository'].findOne({
-      where: { id: result.admin.id as any },
-      relations: ['officeLocation'],
-    });
+  //     // Load office location details
+  //     const adminWithOffice = await this.authService['adminRepository'].findOne({
+  //       where: { id: result.admin.id as any },
+  //       relations: ['officeLocation'],
+  //     });
 
-    return {
-      message: 'Admin user created successfully',
-      admin: {
-        id: result.admin.id,
-        cidNo: result.admin.cidNo,
-        roleType: result.admin.roleType,
-        email: result.admin.email!,
-        mobileNo: result.admin.mobileNo!,
-        agencyId: result.admin.agencyId!,
-        officeLocation: {
-          id: adminWithOffice?.officeLocation?.id || '',
-          name: adminWithOffice?.officeLocation?.name || '',
-        },
-        createdAt: result.admin.createdAt,
-        updatedAt: result.admin.updatedAt,
-      },
-      assignedRoles: result.assignedRoles.map((role) => ({
-        id: role.id,
-        name: role.name,
-        description: role.description,
-      })),
-      effectivePermissions: result.effectivePermissions.map((perm) => ({
-        id: perm.id,
-        name: perm.name,
-        description: perm.description,
-        actions: perm.actions,
-        subjects: perm.subjects,
-      })),
-    };
-  }
+  //     return {
+  //       message: 'Admin user created successfully',
+  //       admin: {
+  //         id: result.admin.id,
+  //         cidNo: result.admin.cidNo,
+  //         roleType: result.admin.roleType,
+  //         email: result.admin.email!,
+  //         mobileNo: result.admin.mobileNo!,
+  //         agencyId: result.admin.agencyId!,
+  //         officeLocation: {
+  //           id: adminWithOffice?.officeLocation?.id || '',
+  //           name: adminWithOffice?.officeLocation?.name || '',
+  //         },
+  //         createdAt: result.admin.createdAt,
+  //         updatedAt: result.admin.updatedAt,
+  //       },
+  //       assignedRoles: result.assignedRoles.map((role) => ({
+  //         id: role.id,
+  //         name: role.name,
+  //         description: role.description,
+  //       })),
+  //       effectivePermissions: result.effectivePermissions.map((perm) => ({
+  //         id: perm.id,
+  //         name: perm.name,
+  //         description: perm.description,
+  //         actions: perm.actions,
+  //         subjects: perm.subjects,
+  //       })),
+  //     };
+  //   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
