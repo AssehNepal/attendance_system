@@ -69,6 +69,15 @@ export class AdminController {
     return this.adminService.findAll(queryDto);
   }
 
+  @Get('all/list')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('read', 'Admin')
+  @ApiOperation({ summary: 'Get all admins without filters or pagination' })
+  @ApiResponse({ status: 200, description: 'Returns all admins' })
+  getAllAdmins() {
+    return this.adminService.getAllAdmins();
+  }
+
   @Get('search/filter')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('read', 'Admin')

@@ -176,6 +176,15 @@ export class AdminService {
     return new PageDto(entities, pageMetaDto);
   }
 
+  async getAllAdmins(): Promise<Admin[]> {
+    return this.adminRepository.find({
+      relations: ['officeLocation', 'agency', 'adminRoles', 'adminRoles.role'],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
   async findOne(id: Uuid): Promise<Admin> {
     const admin = await this.adminRepository.findOne({
       where: { id },
