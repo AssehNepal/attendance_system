@@ -8,10 +8,8 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -62,7 +60,15 @@ export class UsersController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update user' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'User UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   update(
     @Param('id', ParseUUIDPipe) id: Uuid,
     @Body() updateUserDto: UpdateUserDto,
@@ -71,9 +77,15 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete user' })
-  @ApiResponse({ status: 204, description: 'User deleted successfully' })
+  @ApiOperation({ summary: 'Delete user by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'User UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.usersService.remove(id);
   }

@@ -124,9 +124,10 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
+    return { statusCode: 200, message: 'User deleted successfully' };
   }
 
   async findByCidNo(cidNo: string): Promise<User | null> {
