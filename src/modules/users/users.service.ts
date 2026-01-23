@@ -93,12 +93,6 @@ export class UsersService {
   async filter(filterDto: FilterUserDto): Promise<User[]> {
     const queryBuilder = this.userRepository.createQueryBuilder('user');
 
-    if (filterDto.cidNo) {
-      queryBuilder.andWhere('user.cid_no ILIKE :cidNo', {
-        cidNo: `%${filterDto.cidNo}%`,
-      });
-    }
-
     if (filterDto.roleType) {
       queryBuilder.andWhere('user.role_type = :roleType', {
         roleType: filterDto.roleType,
@@ -111,6 +105,14 @@ export class UsersService {
       } else {
         queryBuilder.andWhere('user.password IS NULL');
       }
+    }
+
+    // Search functionality for continuous searching (handles CID and ID)
+    if (filterDto.search) {
+      queryBuilder.andWhere(
+        '(user.cid_no ILIKE :search OR CAST(user.id AS TEXT) ILIKE :search)',
+        { search: `%${filterDto.search}%` },
+      );
     }
 
     return queryBuilder.getMany();
