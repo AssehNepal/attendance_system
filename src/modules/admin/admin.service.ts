@@ -268,9 +268,10 @@ export class AdminService {
     return this.adminRepository.save(admin);
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const admin = await this.findOne(id);
     await this.adminRepository.remove(admin);
+    return { statusCode: 200, message: 'Admin deleted successfully' };
   }
 
   async assignRole(
@@ -300,7 +301,10 @@ export class AdminService {
     return this.adminRoleRepository.save(adminRole);
   }
 
-  async removeRole(adminId: Uuid, roleId: Uuid): Promise<void> {
+  async removeRole(
+    adminId: Uuid,
+    roleId: Uuid,
+  ): Promise<{ statusCode: number; message: string }> {
     const adminRole = await this.adminRoleRepository.findOne({
       where: { adminId, roleId },
     });
@@ -310,6 +314,7 @@ export class AdminService {
     }
 
     await this.adminRoleRepository.remove(adminRole);
+    return { statusCode: 200, message: 'Role removed successfully' };
   }
 
   async findByCidNo(cidNo: string): Promise<Admin | null> {

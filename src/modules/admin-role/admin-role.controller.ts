@@ -7,15 +7,15 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { AdminRoleService } from './admin-role.service';
 import { CreateAdminRoleDto } from './dto/create-admin-role.dto';
@@ -27,6 +27,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard.ts';
 import { Roles } from '../../decorators/roles.decorator.ts';
 import { RequirePermission } from '../../decorators/permission.decorator.ts';
 import { RoleType } from '../../constants/role-type.ts';
+import { UpdateAdminRoleDto } from './dto/update-admin-role.dto';
 
 @Controller('admin-role')
 @ApiTags('Admin-Role Assignments')
@@ -95,19 +96,61 @@ export class AdminRoleController {
     return this.adminRoleService.findOne(id);
   }
 
+  @Patch(':id')
+  @RequirePermission('update', 'AdminRole')
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Admin-Role assignment UUID',
+  })
+  @ApiOperation({ summary: 'Update admin-role assignment' })
+  @ApiResponse({
+    status: 200,
+    description: 'Admin-role assignment updated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Assignment not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Role already assigned to this admin',
+  })
+  update(
+    @Param('id', ParseUUIDPipe) id: Uuid,
+    @Body() updateAdminRoleDto: UpdateAdminRoleDto,
+  ) {
+    return this.adminRoleService.update(id, updateAdminRoleDto);
+  }
+
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('delete', 'AdminRole')
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Admin-Role assignment UUID',
+  })
   @ApiOperation({ summary: 'Remove role from admin by assignment ID' })
-  @ApiResponse({ status: 204, description: 'Role removed successfully' })
+  @ApiResponse({ status: 200, description: 'Role removed successfully' })
+  @ApiResponse({ status: 404, description: 'Assignment not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.adminRoleService.remove(id);
   }
 
   @Delete('admin/:adminId/role/:roleId')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({
+    name: 'adminId',
+    type: 'string',
+    format: 'uuid',
+    description: 'Admin UUID',
+  })
+  @ApiParam({
+    name: 'roleId',
+    type: 'string',
+    format: 'uuid',
+    description: 'Role UUID',
+  })
   @ApiOperation({ summary: 'Remove specific role from admin' })
-  @ApiResponse({ status: 204, description: 'Role removed successfully' })
+  @ApiResponse({ status: 200, description: 'Role removed successfully' })
   @ApiResponse({ status: 404, description: 'Assignment not found' })
   removeByAdminAndRole(
     @Param('adminId', ParseUUIDPipe) adminId: Uuid,

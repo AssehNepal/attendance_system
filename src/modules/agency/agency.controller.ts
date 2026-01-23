@@ -8,10 +8,8 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AgencyService } from './agency.service';
 import { CreateAgencyDto } from './dto/create-agency.dto';
 import { UpdateAgencyDto } from './dto/update-agency.dto';
@@ -62,8 +60,16 @@ export class AgencyController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update agency' })
+  @ApiOperation({ summary: 'Update agency by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Agency UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Agency updated successfully' })
+  @ApiResponse({ status: 404, description: 'Agency not found' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   update(
     @Param('id', ParseUUIDPipe) id: Uuid,
     @Body() updateAgencyDto: UpdateAgencyDto,
@@ -72,9 +78,15 @@ export class AgencyController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete agency' })
-  @ApiResponse({ status: 204, description: 'Agency deleted successfully' })
+  @ApiOperation({ summary: 'Delete agency by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Agency UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Agency deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Agency not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.agencyService.remove(id);
   }

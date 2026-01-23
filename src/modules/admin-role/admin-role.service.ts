@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateAdminRoleDto } from './dto/create-admin-role.dto';
+import { UpdateAdminRoleDto } from './dto/update-admin-role.dto';
 import { QueryAdminRoleDto } from './dto/query-admin-role.dto';
 import { FilterAdminRoleDto } from './dto/filter-admin-role.dto';
 import { AdminRole } from './entities/admin-role.entity';
@@ -109,12 +110,48 @@ export class AdminRoleService {
     return queryBuilder.getMany();
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async update(
+    id: Uuid,
+    updateAdminRoleDto: UpdateAdminRoleDto,
+  ): Promise<AdminRole> {
     const adminRole = await this.findOne(id);
-    await this.adminRoleRepository.remove(adminRole);
+
+    // If updating adminId or roleId, check for conflicts
+    if (updateAdminRoleDto.adminId || updateAdminRoleDto.roleId) {
+      const targetAdminId = updateAdminRoleDto.adminId || adminRole.adminId;
+      const targetRoleId = updateAdminRoleDto.roleId || adminRole.roleId;
+
+      const existing = await this.adminRoleRepository.findOne({
+        where: {
+          adminId: targetAdminId,
+          roleId: targetRoleId,
+        },
+      });
+
+      if (existing && existing.id !== id) {
+        throw new ConflictException(
+          'This role is already assigned to the admin',
+        );
+      }
+    }
+
+    Object.assign(adminRole, updateAdminRoleDto);
+    return this.adminRoleRepository.save(adminRole);
   }
 
-  async removeByAdminAndRole(adminId: Uuid, roleId: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
+    const adminRole = await this.findOne(id);
+    await this.adminRoleRepository.remove(adminRole);
+    return {
+      statusCode: 200,
+      message: 'Admin-Role assignment removed successfully',
+    };
+  }
+
+  async removeByAdminAndRole(
+    adminId: Uuid,
+    roleId: Uuid,
+  ): Promise<{ statusCode: number; message: string }> {
     const adminRole = await this.adminRoleRepository.findOne({
       where: { adminId, roleId },
     });
@@ -124,6 +161,10 @@ export class AdminRoleService {
     }
 
     await this.adminRoleRepository.remove(adminRole);
+    return {
+      statusCode: 200,
+      message: 'Role removed from admin successfully',
+    };
   }
 
   async findByAdminId(adminId: Uuid): Promise<AdminRole[]> {

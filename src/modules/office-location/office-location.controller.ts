@@ -8,8 +8,6 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -17,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { OfficeLocationService } from './office-location.service';
 import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
@@ -90,6 +89,12 @@ export class OfficeLocationController {
 
   @Patch(':id')
   @RequirePermission('update', 'OfficeLocation')
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Office location UUID',
+  })
   @ApiOperation({ summary: 'Update office location' })
   @ApiResponse({
     status: 200,
@@ -103,11 +108,16 @@ export class OfficeLocationController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('delete', 'OfficeLocation')
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Office location UUID',
+  })
   @ApiOperation({ summary: 'Delete office location' })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Office location deleted successfully',
   })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {

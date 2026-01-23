@@ -146,9 +146,10 @@ export class RolesService {
     return this.roleRepository.save(role);
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const role = await this.findOne(id);
     await this.roleRepository.remove(role);
+    return { statusCode: 200, message: 'Role deleted successfully' };
   }
 
   async assignPermission(
@@ -178,7 +179,10 @@ export class RolesService {
     return this.rolePermissionRepository.save(rolePermission);
   }
 
-  async removePermission(roleId: Uuid, permissionId: Uuid): Promise<void> {
+  async removePermission(
+    roleId: Uuid,
+    permissionId: Uuid,
+  ): Promise<{ statusCode: number; message: string }> {
     const rolePermission = await this.rolePermissionRepository.findOne({
       where: { roleId, permissionId },
     });
@@ -188,6 +192,7 @@ export class RolesService {
     }
 
     await this.rolePermissionRepository.remove(rolePermission);
+    return { statusCode: 200, message: 'Permission removed successfully' };
   }
 
   async findByName(name: string): Promise<Role | null> {

@@ -8,8 +8,6 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -17,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -82,8 +81,16 @@ export class RolesController {
 
   @Patch(':id')
   @RequirePermission('update', 'Role')
-  @ApiOperation({ summary: 'Update role' })
+  @ApiOperation({ summary: 'Update role by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Role UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Role updated successfully' })
+  @ApiResponse({ status: 404, description: 'Role not found' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   update(
     @Param('id', ParseUUIDPipe) id: Uuid,
     @Body() updateRoleDto: UpdateRoleDto,
@@ -92,10 +99,16 @@ export class RolesController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('delete', 'Role')
-  @ApiOperation({ summary: 'Delete role' })
-  @ApiResponse({ status: 204, description: 'Role deleted successfully' })
+  @ApiOperation({ summary: 'Delete role by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Role UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Role deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Role not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.rolesService.remove(id);
   }
@@ -112,9 +125,21 @@ export class RolesController {
   }
 
   @Delete(':roleId/remove-permission/:permissionId')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove permission from role' })
-  @ApiResponse({ status: 204, description: 'Permission removed successfully' })
+  @ApiParam({
+    name: 'roleId',
+    type: 'string',
+    description: 'Role UUID',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'permissionId',
+    type: 'string',
+    description: 'Permission UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Permission removed successfully' })
+  @ApiResponse({ status: 404, description: 'Role or permission not found' })
   removePermission(
     @Param('roleId', ParseUUIDPipe) roleId: Uuid,
     @Param('permissionId', ParseUUIDPipe) permissionId: Uuid,

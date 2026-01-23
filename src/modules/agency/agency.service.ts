@@ -153,9 +153,10 @@ export class AgencyService {
     return this.agencyRepository.save(agency);
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const agency = await this.findOne(id);
     await this.agencyRepository.remove(agency);
+    return { statusCode: 200, message: 'Agency deleted successfully' };
   }
 
   async findByCode(code: string): Promise<Agency | null> {

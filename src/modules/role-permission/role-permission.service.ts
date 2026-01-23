@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateRolePermissionDto } from './dto/create-role-permission.dto';
+import { UpdateRolePermissionDto } from './dto/update-role-permission.dto';
 import { QueryRolePermissionDto } from './dto/query-role-permission.dto';
 import { FilterRolePermissionDto } from './dto/filter-role-permission.dto';
 import { RolePermission } from './entities/role-permission.entity';
@@ -145,15 +146,77 @@ export class RolePermissionService {
     return queryBuilder.getMany();
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async update(
+    id: Uuid,
+    updateRolePermissionDto: UpdateRolePermissionDto,
+  ): Promise<RolePermission> {
+    const rolePermission = await this.findOne(id);
+
+    // If updating roleId or permissionId, check for conflicts
+    if (
+      updateRolePermissionDto.roleId ||
+      updateRolePermissionDto.permissionId
+    ) {
+      const targetRoleId =
+        updateRolePermissionDto.roleId || rolePermission.roleId;
+      const targetPermissionId =
+        updateRolePermissionDto.permissionId || rolePermission.permissionId;
+
+      // Validate that the new role exists if being updated
+      if (updateRolePermissionDto.roleId) {
+        const role = await this.roleRepository.findOne({
+          where: { id: updateRolePermissionDto.roleId },
+        });
+        if (!role) {
+          throw new NotFoundException(
+            `Role with ID "${updateRolePermissionDto.roleId}" not found`,
+          );
+        }
+      }
+
+      // Validate that the new permission exists if being updated
+      if (updateRolePermissionDto.permissionId) {
+        const permission = await this.permissionRepository.findOne({
+          where: { id: updateRolePermissionDto.permissionId },
+        });
+        if (!permission) {
+          throw new NotFoundException(
+            `Permission with ID "${updateRolePermissionDto.permissionId}" not found`,
+          );
+        }
+      }
+
+      const existing = await this.rolePermissionRepository.findOne({
+        where: {
+          roleId: targetRoleId,
+          permissionId: targetPermissionId,
+        },
+      });
+
+      if (existing && existing.id !== id) {
+        throw new ConflictException(
+          'This permission is already assigned to the role',
+        );
+      }
+    }
+
+    Object.assign(rolePermission, updateRolePermissionDto);
+    return this.rolePermissionRepository.save(rolePermission);
+  }
+
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const rolePermission = await this.findOne(id);
     await this.rolePermissionRepository.remove(rolePermission);
+    return {
+      statusCode: 200,
+      message: 'Role-Permission assignment removed successfully',
+    };
   }
 
   async removeByRoleAndPermission(
     roleId: Uuid,
     permissionId: Uuid,
-  ): Promise<void> {
+  ): Promise<{ statusCode: number; message: string }> {
     const rolePermission = await this.rolePermissionRepository.findOne({
       where: { roleId, permissionId },
     });
@@ -163,6 +226,10 @@ export class RolePermissionService {
     }
 
     await this.rolePermissionRepository.remove(rolePermission);
+    return {
+      statusCode: 200,
+      message: 'Permission removed from role successfully',
+    };
   }
 
   async findByRoleId(roleId: Uuid): Promise<RolePermission[]> {

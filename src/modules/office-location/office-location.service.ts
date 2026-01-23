@@ -119,8 +119,9 @@ export class OfficeLocationService {
     return this.officeLocationRepository.save(officeLocation);
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const officeLocation = await this.findOne(id);
     await this.officeLocationRepository.remove(officeLocation);
+    return { statusCode: 200, message: 'Office location deleted successfully' };
   }
 }

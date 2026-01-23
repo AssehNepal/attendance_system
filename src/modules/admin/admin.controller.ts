@@ -8,8 +8,6 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -17,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
@@ -100,8 +99,16 @@ export class AdminController {
   @Patch(':id')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('update', 'Admin')
-  @ApiOperation({ summary: 'Update admin' })
+  @ApiOperation({ summary: 'Update admin by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Admin UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Admin updated successfully' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   update(
     @Param('id', ParseUUIDPipe) id: Uuid,
     @Body() updateAdminDto: UpdateAdminDto,
@@ -110,11 +117,17 @@ export class AdminController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('delete', 'Admin')
-  @ApiOperation({ summary: 'Delete admin' })
-  @ApiResponse({ status: 204, description: 'Admin deleted successfully' })
+  @ApiOperation({ summary: 'Delete admin by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Admin UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Admin deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.adminService.remove(id);
   }
@@ -133,9 +146,21 @@ export class AdminController {
   }
 
   @Delete(':adminId/remove-role/:roleId')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove role from admin' })
-  @ApiResponse({ status: 204, description: 'Role removed successfully' })
+  @ApiParam({
+    name: 'adminId',
+    type: 'string',
+    description: 'Admin UUID',
+    format: 'uuid',
+  })
+  @ApiParam({
+    name: 'roleId',
+    type: 'string',
+    description: 'Role UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Role removed successfully' })
+  @ApiResponse({ status: 404, description: 'Admin or role not found' })
   removeRole(
     @Param('adminId', ParseUUIDPipe) adminId: Uuid,
     @Param('roleId', ParseUUIDPipe) roleId: Uuid,

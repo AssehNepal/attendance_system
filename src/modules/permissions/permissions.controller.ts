@@ -8,8 +8,6 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  HttpCode,
-  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -17,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
@@ -82,8 +81,16 @@ export class PermissionsController {
 
   @Patch(':id')
   @RequirePermission('update', 'Permission')
-  @ApiOperation({ summary: 'Update permission' })
+  @ApiOperation({ summary: 'Update permission by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Permission UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Permission updated successfully' })
+  @ApiResponse({ status: 404, description: 'Permission not found' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   update(
     @Param('id', ParseUUIDPipe) id: Uuid,
     @Body() updatePermissionDto: UpdatePermissionDto,
@@ -92,10 +99,16 @@ export class PermissionsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission('delete', 'Permission')
-  @ApiOperation({ summary: 'Delete permission' })
-  @ApiResponse({ status: 204, description: 'Permission deleted successfully' })
+  @ApiOperation({ summary: 'Delete permission by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Permission UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Permission deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Permission not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.permissionsService.remove(id);
   }

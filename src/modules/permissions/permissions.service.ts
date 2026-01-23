@@ -173,9 +173,10 @@ export class PermissionsService {
     return this.permissionRepository.save(permission);
   }
 
-  async remove(id: Uuid): Promise<void> {
+  async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
     const permission = await this.findOne(id);
     await this.permissionRepository.remove(permission);
+    return { statusCode: 200, message: 'Permission deleted successfully' };
   }
 
   async findByName(name: string): Promise<Permission | null> {
