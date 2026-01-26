@@ -16,11 +16,10 @@ export class CreateAdminDto {
   })
   cidNo!: string;
 
-  @StringField({ minLength: 8 })
+  @StringField()
   @ApiProperty({
-    description: 'Admin password (minimum 8 characters)',
-    example: 'Admin@12345',
-    minLength: 8,
+    description: 'Admin password',
+    example: 'Admin@123456',
   })
   password!: string;
 

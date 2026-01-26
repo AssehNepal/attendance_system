@@ -28,14 +28,7 @@ export class UsersService {
       throw new BadRequestException('CID must be between 11 and 20 characters');
     }
 
-    // 2. Validate password length if provided (400 Bad Request)
-    if (createUserDto.password && createUserDto.password.length < 8) {
-      throw new BadRequestException(
-        'Password must be at least 8 characters long',
-      );
-    }
-
-    // 3. Check if user with CID already exists (409 Conflict)
+    // 2. Check if user with CID already exists (409 Conflict)
     const existing = await this.userRepository.findOne({
       where: { cidNo: createUserDto.cidNo },
     });
