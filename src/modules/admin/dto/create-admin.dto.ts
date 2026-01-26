@@ -10,7 +10,10 @@ import {
 } from 'class-validator';
 
 export class CreateAdminDto {
-  @ApiProperty({ example: '11234567890', description: 'CID Number (exactly 11 digits)' })
+  @ApiProperty({
+    example: '11234567890',
+    description: 'CID Number (exactly 11 digits)',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(11, { message: 'cidNo must be exactly 11 digits' })
@@ -20,7 +23,6 @@ export class CreateAdminDto {
   @ApiProperty({ example: 'SecurePassword@123', description: 'Admin password' })
   @IsString()
   @IsNotEmpty()
-  @MinLength(8)
   password!: string;
 
   @ApiPropertyOptional({ description: 'Office Location ID' })
