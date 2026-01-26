@@ -3505,9 +3505,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/microservices@npm:^11.1.3":
-  version: 11.1.3
-  resolution: "@nestjs/microservices@npm:11.1.3"
+"@nestjs/microservices@npm:^11.1.12":
+  version: 11.1.12
+  resolution: "@nestjs/microservices@npm:11.1.12"
   dependencies:
     iterare: "npm:1.2.1"
     tslib: "npm:2.8.1"
@@ -3544,7 +3544,7 @@ __metadata:
       optional: true
     nats:
       optional: true
-  checksum: 10c0/2a4876f664b4dd62852ecf1b451b4a1da74cde9d0c1ac2abaa4c98cb2b2c2fbf18e5fb36279696c61f8aeefd102c70ff034e27bdd71e36f69643981e131c047c
+  checksum: 10c0/afcb64e88590b5b29ecb507ac13742169224ad8268ffbcb1efa10cc7de50349634932158135834b2225327be9f8cdf17c524d1b383cd29f51a51543669c724e4
   languageName: node
   linkType: hard
 
@@ -7506,7 +7506,7 @@ __metadata:
     "@nestjs/core": "npm:^11.1.3"
     "@nestjs/cqrs": "npm:^11.0.3"
     "@nestjs/jwt": "npm:^11.0.0"
-    "@nestjs/microservices": "npm:^11.1.3"
+    "@nestjs/microservices": "npm:^11.1.12"
     "@nestjs/passport": "npm:^11.0.5"
     "@nestjs/platform-express": "npm:^11.1.3"
     "@nestjs/swagger": "npm:^11.2.0"
@@ -7570,6 +7570,7 @@ __metadata:
     mime-types: "npm:^3.0.1"
     morgan: "npm:^1.10.0"
     mysql2: "npm:^3.14.1"
+    nats: "npm:^2.29.3"
     nestjs-cls: "npm:^5.4.3"
     passport: "npm:^0.7.0"
     passport-jwt: "npm:^4.0.1"
@@ -14289,6 +14290,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nats@npm:^2.29.3":
+  version: 2.29.3
+  resolution: "nats@npm:2.29.3"
+  dependencies:
+    nkeys.js: "npm:1.1.0"
+  checksum: 10c0/9a4c09c4b562e415f28926cc7d3b609ee4a727570c398e90d5d71f1a4c08f84ebf8c6d881eb1d202d39fa071c4779bcd8764b982767135b09826f28386cc55fb
+  languageName: node
+  linkType: hard
+
 "natural-compare@npm:^1.4.0":
   version: 1.4.0
   resolution: "natural-compare@npm:1.4.0"
@@ -14356,6 +14366,15 @@ __metadata:
   dependencies:
     type-fest: "npm:^2.5.1"
   checksum: 10c0/9faec009b8b403efbc407f45306d07de5cc58e09df5b00bdd55b01384cd18b0fd29a97aef6915428ba3b5abb0a5c132c3507468c0c3c101e8d737c1337386786
+  languageName: node
+  linkType: hard
+
+"nkeys.js@npm:1.1.0":
+  version: 1.1.0
+  resolution: "nkeys.js@npm:1.1.0"
+  dependencies:
+    tweetnacl: "npm:1.0.3"
+  checksum: 10c0/44ff8d61e46d2b345351ed7844d66036a815aeca23927def6ca258e27a18a1678fe5ab161c5cf0b6e3a3993a945d422b71036986d09669b214540c8491478bef
   languageName: node
   linkType: hard
 
@@ -17819,6 +17838,13 @@ __metadata:
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
+  languageName: node
+  linkType: hard
+
+"tweetnacl@npm:1.0.3":
+  version: 1.0.3
+  resolution: "tweetnacl@npm:1.0.3"
+  checksum: 10c0/069d9df51e8ad4a89fbe6f9806c68e06c65be3c7d42f0701cc43dba5f0d6064686b238bbff206c5addef8854e3ce00c643bff59432ea2f2c639feab0ee1a93f9
   languageName: node
   linkType: hard
 
