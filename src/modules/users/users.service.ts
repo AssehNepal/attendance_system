@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
+import { PageOptionsDto } from '../../common/dto/page-options.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
@@ -52,29 +53,38 @@ export class UsersService {
   async findAll(queryDto: QueryUserDto): Promise<PageDto<User>> {
     const queryBuilder = this.userRepository.createQueryBuilder('user');
 
-    if (queryDto.cidNo) {
+    // Search by CID (supports partial matching for autocomplete)
+    if (queryDto.cidNo || queryDto.q) {
+      const searchTerm = queryDto.cidNo || queryDto.q;
       queryBuilder.andWhere('user.cid_no ILIKE :cidNo', {
-        cidNo: `%${queryDto.cidNo}%`,
+        cidNo: `${searchTerm}%`, // Match CIDs starting with the search term
       });
     }
 
-    if (queryDto.roleType) {
-      queryBuilder.andWhere('user.role_type = :roleType', {
-        roleType: queryDto.roleType,
-      });
-    }
+    // Apply smart defaults for pagination
+    const page = queryDto.page ?? 1;
+    const take = queryDto.take ?? 10; // Default to 10 items per page
 
-    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+    // Apply pagination
+    queryBuilder.skip((page - 1) * take).take(take);
 
+    // Apply ordering
     if (queryDto.order) {
       queryBuilder.orderBy('user.createdAt', queryDto.order as 'ASC' | 'DESC');
     }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
+    // Create a modified query DTO with the actual values used
+    const actualQueryDto = {
+      ...queryDto,
+      page,
+      take,
+    };
+
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: queryDto,
+      pageOptionsDto: actualQueryDto as PageOptionsDto,
     });
 
     return new PageDto(entities, pageMetaDto);

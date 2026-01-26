@@ -14,7 +14,6 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
-import { FilterUserDto } from './dto/filter-user.dto';
 
 @Controller('users')
 @ApiTags('Users')
@@ -37,20 +36,21 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users with pagination' })
-  @ApiResponse({ status: 200, description: 'Returns paginated users' })
+  @ApiOperation({
+    summary: 'Get all users with optional pagination and search',
+  })
+  @ApiResponse({ status: 200, description: 'Returns paginated or all users' })
   findAll(@Query() queryDto: QueryUserDto) {
     return this.usersService.findAll(queryDto);
   }
 
-  @Get('search/filter')
-  @ApiOperation({ summary: 'Filter users by criteria' })
-  @ApiResponse({ status: 200, description: 'Returns filtered users' })
-  filter(@Query() filterDto: FilterUserDto) {
-    return this.usersService.filter(filterDto);
-  }
-
   @Get(':id')
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'User UUID',
+    format: 'uuid',
+  })
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'Returns user' })
   @ApiResponse({ status: 404, description: 'User not found' })

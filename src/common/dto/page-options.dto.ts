@@ -13,20 +13,21 @@ export class PageOptionsDto {
 
   @NumberFieldOptional({
     minimum: 1,
-    default: 1,
     int: true,
   })
-  readonly page!: number;
+  readonly page?: number;
 
   @NumberFieldOptional({
     minimum: 1,
     maximum: 50,
-    default: 10,
     int: true,
   })
-  readonly take!: number;
+  readonly take?: number;
 
-  get skip(): number {
+  get skip(): number | undefined {
+    if (!this.page || !this.take) {
+      return undefined;
+    }
     return (this.page - 1) * this.take;
   }
 
