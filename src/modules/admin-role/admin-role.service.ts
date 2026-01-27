@@ -10,7 +10,6 @@ import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateAdminRoleDto } from './dto/create-admin-role.dto';
 import { UpdateAdminRoleDto } from './dto/update-admin-role.dto';
 import { QueryAdminRoleDto } from './dto/query-admin-role.dto';
-import { FilterAdminRoleDto } from './dto/filter-admin-role.dto';
 import { AdminRole } from './entities/admin-role.entity';
 
 @Injectable()
@@ -24,8 +23,8 @@ export class AdminRoleService {
     // Check if assignment already exists
     const existing = await this.adminRoleRepository.findOne({
       where: {
-        adminId: createAdminRoleDto.adminId,
-        roleId: createAdminRoleDto.roleId,
+        adminId: createAdminRoleDto.adminId as any,
+        roleId: createAdminRoleDto.roleId as any,
       },
     });
 
@@ -35,43 +34,6 @@ export class AdminRoleService {
 
     const adminRole = this.adminRoleRepository.create(createAdminRoleDto);
     return this.adminRoleRepository.save(adminRole);
-  }
-
-  async findAll(queryDto: QueryAdminRoleDto): Promise<PageDto<AdminRole>> {
-    const queryBuilder = this.adminRoleRepository
-      .createQueryBuilder('adminRole')
-      .leftJoinAndSelect('adminRole.admin', 'admin')
-      .leftJoinAndSelect('adminRole.role', 'role');
-
-    if (queryDto.adminId) {
-      queryBuilder.andWhere('adminRole.admin_id = :adminId', {
-        adminId: queryDto.adminId,
-      });
-    }
-
-    if (queryDto.roleId) {
-      queryBuilder.andWhere('adminRole.role_id = :roleId', {
-        roleId: queryDto.roleId,
-      });
-    }
-
-    queryBuilder.skip(queryDto.skip).take(queryDto.take);
-
-    if (queryDto.order) {
-      queryBuilder.orderBy(
-        'adminRole.createdAt',
-        queryDto.order as 'ASC' | 'DESC',
-      );
-    }
-
-    const [entities, itemCount] = await queryBuilder.getManyAndCount();
-
-    const pageMetaDto = new PageMetaDto({
-      itemCount,
-      pageOptionsDto: queryDto,
-    });
-
-    return new PageDto(entities, pageMetaDto);
   }
 
   async findOne(id: Uuid): Promise<AdminRole> {
@@ -89,27 +51,6 @@ export class AdminRoleService {
     return adminRole;
   }
 
-  async filter(filterDto: FilterAdminRoleDto): Promise<AdminRole[]> {
-    const queryBuilder = this.adminRoleRepository
-      .createQueryBuilder('adminRole')
-      .leftJoinAndSelect('adminRole.admin', 'admin')
-      .leftJoinAndSelect('adminRole.role', 'role');
-
-    if (filterDto.adminId) {
-      queryBuilder.andWhere('adminRole.admin_id = :adminId', {
-        adminId: filterDto.adminId,
-      });
-    }
-
-    if (filterDto.roleId) {
-      queryBuilder.andWhere('adminRole.role_id = :roleId', {
-        roleId: filterDto.roleId,
-      });
-    }
-
-    return queryBuilder.getMany();
-  }
-
   async update(
     id: Uuid,
     updateAdminRoleDto: UpdateAdminRoleDto,
@@ -123,8 +64,8 @@ export class AdminRoleService {
 
       const existing = await this.adminRoleRepository.findOne({
         where: {
-          adminId: targetAdminId,
-          roleId: targetRoleId,
+          adminId: targetAdminId as any,
+          roleId: targetRoleId as any,
         },
       });
 
@@ -183,5 +124,57 @@ export class AdminRoleService {
       where: { roleId },
       relations: ['admin'],
     });
+  }
+
+  async findAll(queryDto: QueryAdminRoleDto): Promise<PageDto<AdminRole>> {
+    const queryBuilder = this.adminRoleRepository
+      .createQueryBuilder('adminRole')
+      .leftJoinAndSelect('adminRole.admin', 'admin')
+      .leftJoinAndSelect('adminRole.role', 'role');
+
+    // Filter by admin ID
+    if (queryDto.adminId) {
+      queryBuilder.andWhere('adminRole.admin_id = :adminId', {
+        adminId: queryDto.adminId,
+      });
+    }
+
+    // Filter by role ID
+    if (queryDto.roleId) {
+      queryBuilder.andWhere('adminRole.role_id = :roleId', {
+        roleId: queryDto.roleId,
+      });
+    }
+
+    // Apply smart defaults for pagination
+    const page = queryDto.page ?? 1;
+    const take = queryDto.take ?? 10;
+
+    // Apply pagination
+    queryBuilder.skip((page - 1) * take).take(take);
+
+    // Apply ordering
+    if (queryDto.order) {
+      queryBuilder.orderBy(
+        'adminRole.createdAt',
+        queryDto.order as 'ASC' | 'DESC',
+      );
+    }
+
+    const [entities, itemCount] = await queryBuilder.getManyAndCount();
+
+    // Create a modified query DTO with the actual values used
+    const actualQueryDto = {
+      ...queryDto,
+      page,
+      take,
+    };
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: actualQueryDto as any,
+    });
+
+    return new PageDto(entities, pageMetaDto);
   }
 }

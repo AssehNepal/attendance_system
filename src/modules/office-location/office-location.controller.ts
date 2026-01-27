@@ -21,7 +21,6 @@ import { OfficeLocationService } from './office-location.service';
 import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
 import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
 import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
-// import { FilterOfficeLocationDto } from './dto/filter-office-location.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
 import { PermissionsGuard } from '../../guards/permissions.guard.ts';
@@ -39,7 +38,7 @@ export class OfficeLocationController {
   constructor(private readonly officeLocationService: OfficeLocationService) {}
 
   @Post()
-  //   @Transactional()
+  // @Transactional()
   @RequirePermission('create', 'OfficeLocation')
   @ApiOperation({ summary: 'Create a new office location' })
   @ApiResponse({

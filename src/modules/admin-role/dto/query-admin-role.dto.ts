@@ -1,15 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { PageOptionsDto } from '../../../common/dto/page-options.dto';
 
 export class QueryAdminRoleDto extends PageOptionsDto {
-  @ApiPropertyOptional({ description: 'Filter by Admin ID' })
-  @IsUUID()
+  @ApiPropertyOptional({
+    description: 'Filter by Admin ID',
+    type: 'string',
+  })
+  @IsString()
   @IsOptional()
-  adminId?: Uuid;
+  adminId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by Role ID' })
-  @IsUUID()
+  @ApiPropertyOptional({
+    description: 'Filter by Role ID',
+    type: 'string',
+  })
+  @IsString()
   @IsOptional()
-  roleId?: Uuid;
+  roleId?: string;
 }

@@ -18,6 +18,7 @@ import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { OfficeLocation } from '../office-location/entities/office-location.entity';
 import { Agency } from '../agency/entities/agency.entity';
+import { RoleType } from '../../constants/role-type';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -40,7 +41,27 @@ export class AdminService {
       throw new BadRequestException('CID must be exactly 11 digits');
     }
 
-    // 3. Validate mobile number format if provided (400 Bad Request)
+    // 2. Validate roleType is ADMIN or SUPER_ADMIN (400 Bad Request)
+    if (
+      createAdminDto.roleType !== RoleType.ADMIN &&
+      createAdminDto.roleType !== RoleType.SUPER_ADMIN
+    ) {
+      throw new BadRequestException(
+        'roleType must be either ADMIN or SUPER_ADMIN',
+      );
+    }
+
+    // 3. Check if admin with CID already exists (409 Conflict)
+    const existing = await this.adminRepository.findOne({
+      where: { cidNo: createAdminDto.cidNo },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `Admin with CID "${createAdminDto.cidNo}" already exists`,
+      );
+    }
+
+    // 4. Validate mobile number format if provided (400 Bad Request)
     if (
       createAdminDto.mobileNo &&
       !/^\+975\d{8}$/.test(createAdminDto.mobileNo)
@@ -78,18 +99,7 @@ export class AdminService {
       }
     }
 
-    // 7. Check if admin with CID already exists (409 Conflict)
-    const existing = await this.adminRepository.findOne({
-      where: { cidNo: createAdminDto.cidNo },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        `Admin with CID "${createAdminDto.cidNo}" already exists`,
-      );
-    }
-
-    // 8. Validate office location exists if provided (404 Not Found)
+    // 7. Validate office location exists if provided (404 Not Found)
     if (createAdminDto.officeLocationId) {
       const officeLocation = await this.officeLocationRepository.findOne({
         where: { id: createAdminDto.officeLocationId as any },
@@ -101,7 +111,7 @@ export class AdminService {
       }
     }
 
-    // 9. Validate agency exists if provided (404 Not Found)
+    // 8. Validate agency exists if provided (404 Not Found)
     if (createAdminDto.agencyId) {
       const agency = await this.agencyRepository.findOne({
         where: { id: createAdminDto.agencyId as any },
@@ -113,7 +123,7 @@ export class AdminService {
       }
     }
 
-    // 10. Hash the password before saving
+    // 9. Hash the password before saving
     const hashedPassword = await bcrypt.hash(
       createAdminDto.password,
       BCRYPT_ROUNDS,

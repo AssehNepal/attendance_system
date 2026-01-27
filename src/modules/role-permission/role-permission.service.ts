@@ -10,7 +10,6 @@ import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateRolePermissionDto } from './dto/create-role-permission.dto';
 import { UpdateRolePermissionDto } from './dto/update-role-permission.dto';
 import { QueryRolePermissionDto } from './dto/query-role-permission.dto';
-import { FilterRolePermissionDto } from './dto/filter-role-permission.dto';
 import { RolePermission } from './entities/role-permission.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
@@ -31,7 +30,7 @@ export class RolePermissionService {
   ): Promise<RolePermission> {
     // 1. Validate that role exists (404 Not Found)
     const role = await this.roleRepository.findOne({
-      where: { id: createRolePermissionDto.roleId },
+      where: { id: createRolePermissionDto.roleId as any },
     });
 
     if (!role) {
@@ -42,7 +41,7 @@ export class RolePermissionService {
 
     // 2. Validate that permission exists (404 Not Found)
     const permission = await this.permissionRepository.findOne({
-      where: { id: createRolePermissionDto.permissionId },
+      where: { id: createRolePermissionDto.permissionId as any },
     });
 
     if (!permission) {
@@ -54,8 +53,8 @@ export class RolePermissionService {
     // 3. Check if assignment already exists (409 Conflict)
     const existing = await this.rolePermissionRepository.findOne({
       where: {
-        roleId: createRolePermissionDto.roleId,
-        permissionId: createRolePermissionDto.permissionId,
+        roleId: createRolePermissionDto.roleId as any,
+        permissionId: createRolePermissionDto.permissionId as any,
       },
     });
 
@@ -91,7 +90,12 @@ export class RolePermissionService {
       });
     }
 
-    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+    // Apply smart defaults for pagination
+    const page = queryDto.page ?? 1;
+    const take = queryDto.take ?? 10;
+
+    // Apply pagination
+    queryBuilder.skip((page - 1) * take).take(take);
 
     if (queryDto.order) {
       queryBuilder.orderBy(
@@ -102,9 +106,16 @@ export class RolePermissionService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
+    // Create a modified query DTO with the actual values used
+    const actualQueryDto = {
+      ...queryDto,
+      page,
+      take,
+    };
+
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: queryDto,
+      pageOptionsDto: actualQueryDto as any,
     });
 
     return new PageDto(entities, pageMetaDto);
@@ -123,27 +134,6 @@ export class RolePermissionService {
     }
 
     return rolePermission;
-  }
-
-  async filter(filterDto: FilterRolePermissionDto): Promise<RolePermission[]> {
-    const queryBuilder = this.rolePermissionRepository
-      .createQueryBuilder('rolePermission')
-      .leftJoinAndSelect('rolePermission.role', 'role')
-      .leftJoinAndSelect('rolePermission.permission', 'permission');
-
-    if (filterDto.roleId) {
-      queryBuilder.andWhere('rolePermission.role_id = :roleId', {
-        roleId: filterDto.roleId,
-      });
-    }
-
-    if (filterDto.permissionId) {
-      queryBuilder.andWhere('rolePermission.permission_id = :permissionId', {
-        permissionId: filterDto.permissionId,
-      });
-    }
-
-    return queryBuilder.getMany();
   }
 
   async update(
@@ -165,7 +155,7 @@ export class RolePermissionService {
       // Validate that the new role exists if being updated
       if (updateRolePermissionDto.roleId) {
         const role = await this.roleRepository.findOne({
-          where: { id: updateRolePermissionDto.roleId },
+          where: { id: updateRolePermissionDto.roleId as any },
         });
         if (!role) {
           throw new NotFoundException(
@@ -177,7 +167,7 @@ export class RolePermissionService {
       // Validate that the new permission exists if being updated
       if (updateRolePermissionDto.permissionId) {
         const permission = await this.permissionRepository.findOne({
-          where: { id: updateRolePermissionDto.permissionId },
+          where: { id: updateRolePermissionDto.permissionId as any },
         });
         if (!permission) {
           throw new NotFoundException(
@@ -188,8 +178,8 @@ export class RolePermissionService {
 
       const existing = await this.rolePermissionRepository.findOne({
         where: {
-          roleId: targetRoleId,
-          permissionId: targetPermissionId,
+          roleId: targetRoleId as any,
+          permissionId: targetPermissionId as any,
         },
       });
 

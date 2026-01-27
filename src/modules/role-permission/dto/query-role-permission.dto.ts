@@ -1,15 +1,25 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { PageOptionsDto } from '../../../common/dto/page-options.dto';
 
 export class QueryRolePermissionDto extends PageOptionsDto {
-  @ApiPropertyOptional({ description: 'Filter by Role ID' })
-  @IsUUID()
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'uuid',
+    description: 'Filter by Role ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsString()
   @IsOptional()
-  roleId?: Uuid;
+  roleId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by Permission ID' })
-  @IsUUID()
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'uuid',
+    description: 'Filter by Permission ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  })
+  @IsString()
   @IsOptional()
-  permissionId?: Uuid;
+  permissionId?: string;
 }

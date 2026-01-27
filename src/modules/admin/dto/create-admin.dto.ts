@@ -7,7 +7,9 @@ import {
   IsUUID,
   MinLength,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
+import { RoleType } from '../../../constants/role-type';
 
 export class CreateAdminDto {
   @ApiProperty({
@@ -19,6 +21,16 @@ export class CreateAdminDto {
   @MinLength(11, { message: 'cidNo must be exactly 11 digits' })
   @MaxLength(11, { message: 'cidNo must be exactly 11 digits' })
   cidNo!: string;
+
+  @ApiProperty({
+    enum: RoleType,
+    enumName: 'RoleType',
+    example: RoleType.ADMIN,
+    description: 'Admin role type (ADMIN or SUPER_ADMIN)',
+  })
+  @IsEnum(RoleType, { message: 'roleType must be either ADMIN or SUPER_ADMIN' })
+  @IsNotEmpty()
+  roleType!: RoleType;
 
   @ApiProperty({ example: 'SecurePassword@123', description: 'Admin password' })
   @IsString()
