@@ -20,6 +20,7 @@ import { OfficeLocation } from '../entities/office-location.entity';
 import { Agency } from '../../agency/entities/agency.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { TokenType } from '../../../constants/token-type.ts';
+import { ApiConfigService } from '../../../shared/services/api-config.service.ts';
 import type { UserLoginDto } from '../dto/user-login.dto';
 import type { AdminLoginDto } from '../dto/admin-login.dto';
 import type { CreateAdminDto } from '../dto/create-admin.dto';
@@ -76,6 +77,7 @@ export class AuthService {
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
+    private readonly configService: ApiConfigService,
   ) {}
 
   /**
@@ -597,9 +599,10 @@ export class AuthService {
       jti, // unique token ID
     };
 
-    // 3 months = 90 days
+    // Get expiration time from config (in seconds)
+    const expirationSeconds = this.configService.authConfig.refreshTokenExpirationTime;
     const refreshToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '90d',
+      expiresIn: expirationSeconds,
     });
 
     return refreshToken;
@@ -615,8 +618,8 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<void> {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 90); // 3 months
+    const expirationSeconds = this.configService.authConfig.refreshTokenExpirationTime;
+    const expiresAt = new Date(Date.now() + expirationSeconds * 1000);
 
     await this.refreshTokenRepository.save({
       token,
