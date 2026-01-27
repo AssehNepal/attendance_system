@@ -21,8 +21,6 @@ import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryRoleDto } from './dto/query-role.dto';
-import { FilterRoleDto } from './dto/filter-role.dto';
-import { AssignPermissionDto } from './dto/assign-permission.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
 import { PermissionsGuard } from '../../guards/permissions.guard.ts';
@@ -56,23 +54,23 @@ export class RolesController {
 
   @Get()
   @RequirePermission('read', 'Role')
-  @ApiOperation({ summary: 'Get all roles with pagination' })
+  @ApiOperation({
+    summary: 'Get all roles with optional pagination and search',
+  })
   @ApiResponse({ status: 200, description: 'Returns paginated roles' })
   findAll(@Query() queryDto: QueryRoleDto) {
     return this.rolesService.findAll(queryDto);
   }
 
-  @Get('search/filter')
-  @RequirePermission('read', 'Role')
-  @ApiOperation({ summary: 'Filter roles by criteria' })
-  @ApiResponse({ status: 200, description: 'Returns filtered roles' })
-  filter(@Query() filterDto: FilterRoleDto) {
-    return this.rolesService.filter(filterDto);
-  }
-
   @Get(':id')
   @RequirePermission('read', 'Role')
   @ApiOperation({ summary: 'Get role by ID with permissions' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Role UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Returns role' })
   @ApiResponse({ status: 404, description: 'Role not found' })
   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {
@@ -111,39 +109,5 @@ export class RolesController {
   @ApiResponse({ status: 404, description: 'Role not found' })
   remove(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.rolesService.remove(id);
-  }
-
-  @Post(':id/assign-permission')
-  @ApiOperation({ summary: 'Assign permission to role' })
-  @ApiResponse({ status: 201, description: 'Permission assigned successfully' })
-  @ApiResponse({ status: 409, description: 'Permission already assigned' })
-  assignPermission(
-    @Param('id', ParseUUIDPipe) id: Uuid,
-    @Body() assignPermissionDto: AssignPermissionDto,
-  ) {
-    return this.rolesService.assignPermission(id, assignPermissionDto);
-  }
-
-  @Delete(':roleId/remove-permission/:permissionId')
-  @ApiOperation({ summary: 'Remove permission from role' })
-  @ApiParam({
-    name: 'roleId',
-    type: 'string',
-    description: 'Role UUID',
-    format: 'uuid',
-  })
-  @ApiParam({
-    name: 'permissionId',
-    type: 'string',
-    description: 'Permission UUID',
-    format: 'uuid',
-  })
-  @ApiResponse({ status: 200, description: 'Permission removed successfully' })
-  @ApiResponse({ status: 404, description: 'Role or permission not found' })
-  removePermission(
-    @Param('roleId', ParseUUIDPipe) roleId: Uuid,
-    @Param('permissionId', ParseUUIDPipe) permissionId: Uuid,
-  ) {
-    return this.rolesService.removePermission(roleId, permissionId);
   }
 }

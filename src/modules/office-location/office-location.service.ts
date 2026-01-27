@@ -15,7 +15,6 @@ import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
 import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
 import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
-import { FilterOfficeLocationDto } from './dto/filter-office-location.dto';
 import { OfficeLocation } from './entities/office-location.entity';
 import { OFFICE_LOCATION_EVENTS } from '../../constants/nats-patterns';
 import {
@@ -118,14 +117,21 @@ export class OfficeLocationService {
     const queryBuilder =
       this.officeLocationRepository.createQueryBuilder('officeLocation');
 
-    if (queryDto.name) {
+    // Search by office location name using general query parameter
+    if (queryDto.q) {
       queryBuilder.andWhere('officeLocation.name ILIKE :name', {
-        name: `%${queryDto.name}%`,
+        name: `${queryDto.q}%`,
       });
     }
 
-    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+    // Apply smart defaults for pagination
+    const page = queryDto.page ?? 1;
+    const take = queryDto.take ?? 10;
 
+    // Apply pagination
+    queryBuilder.skip((page - 1) * take).take(take);
+
+    // Apply ordering
     if (queryDto.order) {
       queryBuilder.orderBy(
         'officeLocation.createdAt',
@@ -135,9 +141,16 @@ export class OfficeLocationService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
+    // Create a modified query DTO with the actual values used
+    const actualQueryDto = {
+      ...queryDto,
+      page,
+      take,
+    };
+
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: queryDto,
+      pageOptionsDto: actualQueryDto as any,
     });
 
     return new PageDto(entities, pageMetaDto);
@@ -156,18 +169,18 @@ export class OfficeLocationService {
     return officeLocation;
   }
 
-  async filter(filterDto: FilterOfficeLocationDto): Promise<OfficeLocation[]> {
-    const queryBuilder =
-      this.officeLocationRepository.createQueryBuilder('officeLocation');
+  //   async filter(filterDto: FilterOfficeLocationDto): Promise<OfficeLocation[]> {
+  //     const queryBuilder =
+  //       this.officeLocationRepository.createQueryBuilder('officeLocation');
 
-    if (filterDto.name) {
-      queryBuilder.andWhere('officeLocation.name ILIKE :name', {
-        name: `%${filterDto.name}%`,
-      });
-    }
+  //     if (filterDto.name) {
+  //       queryBuilder.andWhere('officeLocation.name ILIKE :name', {
+  //         name: `%${filterDto.name}%`,
+  //       });
+  //     }
 
-    return queryBuilder.getMany();
-  }
+  //     return queryBuilder.getMany();
+  //   }
 
   async update(
     id: Uuid,

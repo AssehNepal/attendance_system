@@ -21,13 +21,14 @@ import { OfficeLocationService } from './office-location.service';
 import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
 import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
 import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
-import { FilterOfficeLocationDto } from './dto/filter-office-location.dto';
+// import { FilterOfficeLocationDto } from './dto/filter-office-location.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
 import { PermissionsGuard } from '../../guards/permissions.guard.ts';
 import { Roles } from '../../decorators/roles.decorator.ts';
 import { RequirePermission } from '../../decorators/permission.decorator.ts';
 import { RoleType } from '../../constants/role-type.ts';
+// import { Transactional } from 'typeorm-transactional';
 
 @Controller('office-locations')
 @ApiTags('Office Locations')
@@ -38,6 +39,7 @@ export class OfficeLocationController {
   constructor(private readonly officeLocationService: OfficeLocationService) {}
 
   @Post()
+  //   @Transactional()
   @RequirePermission('create', 'OfficeLocation')
   @ApiOperation({ summary: 'Create a new office location' })
   @ApiResponse({
@@ -58,7 +60,9 @@ export class OfficeLocationController {
 
   @Get()
   @RequirePermission('read', 'OfficeLocation')
-  @ApiOperation({ summary: 'Get all office locations with pagination' })
+  @ApiOperation({
+    summary: 'Get all office locations with optional pagination and search',
+  })
   @ApiResponse({
     status: 200,
     description: 'Returns paginated office locations',
@@ -67,20 +71,26 @@ export class OfficeLocationController {
     return this.officeLocationService.findAll(queryDto);
   }
 
-  @Get('search/filter')
-  @RequirePermission('read', 'OfficeLocation')
-  @ApiOperation({ summary: 'Filter office locations by criteria' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns filtered office locations',
-  })
-  filter(@Query() filterDto: FilterOfficeLocationDto) {
-    return this.officeLocationService.filter(filterDto);
-  }
+  //   @Get('search/filter')
+  //   @RequirePermission('read', 'OfficeLocation')
+  //   @ApiOperation({ summary: 'Filter office locations by criteria' })
+  //   @ApiResponse({
+  //     status: 200,
+  //     description: 'Returns filtered office locations',
+  //   })
+  //   filter(@Query() filterDto: FilterOfficeLocationDto) {
+  //     return this.officeLocationService.filter(filterDto);
+  //   }
 
   @Get(':id')
   @RequirePermission('read', 'OfficeLocation')
   @ApiOperation({ summary: 'Get office location by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Office location UUID',
+  })
   @ApiResponse({ status: 200, description: 'Returns office location' })
   @ApiResponse({ status: 404, description: 'Office location not found' })
   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {

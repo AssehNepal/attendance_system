@@ -53,6 +53,12 @@ export class AgencyController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get agency by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Agency UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Returns agency' })
   @ApiResponse({ status: 404, description: 'Agency not found' })
   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {

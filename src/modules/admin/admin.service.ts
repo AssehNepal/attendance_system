@@ -134,36 +134,52 @@ export class AdminService {
       .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
       .leftJoinAndSelect('adminRoles.role', 'role');
 
-    if (queryDto.cidNo) {
+    // Search by CID or general query
+    if (queryDto.cidNo || queryDto.q) {
+      const searchTerm = queryDto.cidNo || queryDto.q;
       queryBuilder.andWhere('admin.cid_no ILIKE :cidNo', {
-        cidNo: `%${queryDto.cidNo}%`,
+        cidNo: `${searchTerm}%`,
       });
     }
 
+    // Filter by office location
     if (queryDto.officeLocationId) {
       queryBuilder.andWhere('admin.office_location_id = :officeLocationId', {
         officeLocationId: queryDto.officeLocationId,
       });
     }
 
+    // Filter by agency
     if (queryDto.agencyId) {
       queryBuilder.andWhere('admin.agency_id = :agencyId', {
         agencyId: queryDto.agencyId,
       });
     }
 
-    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+    // Apply smart defaults for pagination
+    const page = queryDto.page ?? 1;
+    const take = queryDto.take ?? 10;
 
-    // Apply ordering - use 'ASC' | 'DESC' explicitly
+    // Apply pagination
+    queryBuilder.skip((page - 1) * take).take(take);
+
+    // Apply ordering
     if (queryDto.order) {
       queryBuilder.orderBy('admin.createdAt', queryDto.order as 'ASC' | 'DESC');
     }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
+    // Create a modified query DTO with the actual values used
+    const actualQueryDto = {
+      ...queryDto,
+      page,
+      take,
+    };
+
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: queryDto,
+      pageOptionsDto: actualQueryDto as any,
     });
 
     return new PageDto(entities, pageMetaDto);

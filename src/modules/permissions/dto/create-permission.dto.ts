@@ -11,7 +11,7 @@ export class CreatePermissionDto {
   name!: string;
 
   @ApiPropertyOptional({
-    example: 'Can create, read, update and delete users',
+    example: ['sample of the description'],
     description: 'Permission description',
   })
   @IsString()
@@ -19,7 +19,7 @@ export class CreatePermissionDto {
   description?: string;
 
   @ApiProperty({
-    example: ['create', 'read', 'update', 'delete'],
+    example: ['approve', 'verify', 'create', 'read', 'update', 'delete'],
     description: 'Allowed actions',
   })
   @IsArray()
@@ -27,7 +27,7 @@ export class CreatePermissionDto {
   actions!: string[];
 
   @ApiProperty({
-    example: ['User', 'Admin'],
+    example: ['birth Registration', 'death Registration', 'user creation'],
     description: 'Subjects the permission applies to',
   })
   @IsArray()
