@@ -57,7 +57,9 @@ export class OfficeLocationController {
 
   @Get()
   @RequirePermission('read', 'OfficeLocation')
-  @ApiOperation({ summary: 'Get all office locations with pagination' })
+  @ApiOperation({
+    summary: 'Get all office locations with optional pagination and filters',
+  })
   @ApiResponse({
     status: 200,
     description: 'Returns paginated office locations',

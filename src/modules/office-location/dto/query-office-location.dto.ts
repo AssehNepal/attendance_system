@@ -1,6 +1,9 @@
 import { PageOptionsDto } from '../../../common/dto/page-options.dto';
 
 export class QueryOfficeLocationDto extends PageOptionsDto {
-  // Inherits: page, take, order, q from PageOptionsDto
-  // Use 'q' parameter for searching office location names
+  // Inherits all properties from PageOptionsDto including:
+  // - page?: number
+  // - take?: number
+  // - order?: Order
+  // - q?: string (for search)
 }

@@ -118,13 +118,19 @@ export class OfficeLocationService {
     const queryBuilder =
       this.officeLocationRepository.createQueryBuilder('officeLocation');
 
-    if (queryDto.name) {
+    // Search by q parameter
+    if (queryDto.q) {
       queryBuilder.andWhere('officeLocation.name ILIKE :name', {
-        name: `%${queryDto.name}%`,
+        name: `${queryDto.q}%`, // Prefix matching
       });
     }
 
-    queryBuilder.skip(queryDto.skip).take(queryDto.take);
+    // Apply smart defaults for pagination
+    const page = queryDto.page ?? 1;
+    const take = queryDto.take ?? 10;
+
+    // Apply pagination
+    queryBuilder.skip((page - 1) * take).take(take);
 
     if (queryDto.order) {
       queryBuilder.orderBy(
@@ -135,9 +141,16 @@ export class OfficeLocationService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
+    // Create a modified query DTO with the actual values used
+    const actualQueryDto = {
+      ...queryDto,
+      page,
+      take,
+    };
+
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: queryDto,
+      pageOptionsDto: actualQueryDto as any,
     });
 
     return new PageDto(entities, pageMetaDto);
