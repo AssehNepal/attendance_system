@@ -13,7 +13,7 @@ export class Admin extends AbstractEntity {
   @Column({ type: 'varchar', length: 20, default: 'ADMIN', name: 'role_type' })
   roleType!: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'password' })
+  @Column({ type: 'text', name: 'password' })
   @Exclude({ toPlainOnly: true })
   password!: string;
 

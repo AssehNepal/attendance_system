@@ -18,7 +18,6 @@ import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { OfficeLocation } from '../office-location/entities/office-location.entity';
 import { Agency } from '../agency/entities/agency.entity';
-import { RoleType } from '../../constants/role-type';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -41,27 +40,14 @@ export class AdminService {
       throw new BadRequestException('CID must be exactly 11 digits');
     }
 
-    // 2. Validate roleType is ADMIN or SUPER_ADMIN (400 Bad Request)
-    if (
-      createAdminDto.roleType !== RoleType.ADMIN &&
-      createAdminDto.roleType !== RoleType.SUPER_ADMIN
-    ) {
+    // 2. Validate password length (400 Bad Request)
+    if (createAdminDto.password.length < 11) {
       throw new BadRequestException(
-        'roleType must be either ADMIN or SUPER_ADMIN',
+        'Password must be at least 11 characters long',
       );
     }
 
-    // 3. Check if admin with CID already exists (409 Conflict)
-    const existing = await this.adminRepository.findOne({
-      where: { cidNo: createAdminDto.cidNo },
-    });
-    if (existing) {
-      throw new ConflictException(
-        `Admin with CID "${createAdminDto.cidNo}" already exists`,
-      );
-    }
-
-    // 4. Validate mobile number format if provided (400 Bad Request)
+    // 3. Validate mobile number format if provided (400 Bad Request)
     if (
       createAdminDto.mobileNo &&
       !/^\+975\d{8}$/.test(createAdminDto.mobileNo)
@@ -99,7 +85,18 @@ export class AdminService {
       }
     }
 
-    // 7. Validate office location exists if provided (404 Not Found)
+    // 7. Check if admin with CID already exists (409 Conflict)
+    const existing = await this.adminRepository.findOne({
+      where: { cidNo: createAdminDto.cidNo },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Admin with CID "${createAdminDto.cidNo}" already exists`,
+      );
+    }
+
+    // 8. Validate office location exists if provided (404 Not Found)
     if (createAdminDto.officeLocationId) {
       const officeLocation = await this.officeLocationRepository.findOne({
         where: { id: createAdminDto.officeLocationId as any },
@@ -111,7 +108,7 @@ export class AdminService {
       }
     }
 
-    // 8. Validate agency exists if provided (404 Not Found)
+    // 9. Validate agency exists if provided (404 Not Found)
     if (createAdminDto.agencyId) {
       const agency = await this.agencyRepository.findOne({
         where: { id: createAdminDto.agencyId as any },
@@ -123,7 +120,7 @@ export class AdminService {
       }
     }
 
-    // 9. Hash the password before saving
+    // 10. Hash the password before saving
     const hashedPassword = await bcrypt.hash(
       createAdminDto.password,
       BCRYPT_ROUNDS,
@@ -144,52 +141,36 @@ export class AdminService {
       .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
       .leftJoinAndSelect('adminRoles.role', 'role');
 
-    // Search by CID or general query
-    if (queryDto.cidNo || queryDto.q) {
-      const searchTerm = queryDto.cidNo || queryDto.q;
+    if (queryDto.cidNo) {
       queryBuilder.andWhere('admin.cid_no ILIKE :cidNo', {
-        cidNo: `${searchTerm}%`,
+        cidNo: `%${queryDto.cidNo}%`,
       });
     }
 
-    // Filter by office location
     if (queryDto.officeLocationId) {
       queryBuilder.andWhere('admin.office_location_id = :officeLocationId', {
         officeLocationId: queryDto.officeLocationId,
       });
     }
 
-    // Filter by agency
     if (queryDto.agencyId) {
       queryBuilder.andWhere('admin.agency_id = :agencyId', {
         agencyId: queryDto.agencyId,
       });
     }
 
-    // Apply smart defaults for pagination
-    const page = queryDto.page ?? 1;
-    const take = queryDto.take ?? 10;
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
 
-    // Apply pagination
-    queryBuilder.skip((page - 1) * take).take(take);
-
-    // Apply ordering
+    // Apply ordering - use 'ASC' | 'DESC' explicitly
     if (queryDto.order) {
       queryBuilder.orderBy('admin.createdAt', queryDto.order as 'ASC' | 'DESC');
     }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    // Create a modified query DTO with the actual values used
-    const actualQueryDto = {
-      ...queryDto,
-      page,
-      take,
-    };
-
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: actualQueryDto as any,
+      pageOptionsDto: queryDto,
     });
 
     return new PageDto(entities, pageMetaDto);

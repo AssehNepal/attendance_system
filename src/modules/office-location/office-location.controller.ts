@@ -66,16 +66,16 @@ export class OfficeLocationController {
     return this.officeLocationService.findAll(queryDto);
   }
 
-  @Get('search/filter')
-  @RequirePermission('read', 'OfficeLocation')
-  @ApiOperation({ summary: 'Filter office locations by criteria' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns filtered office locations',
-  })
-  filter(@Query() filterDto: FilterOfficeLocationDto) {
-    return this.officeLocationService.filter(filterDto);
-  }
+  //   @Get('search/filter')
+  //   @RequirePermission('read', 'OfficeLocation')
+  //   @ApiOperation({ summary: 'Filter office locations by criteria' })
+  //   @ApiResponse({
+  //     status: 200,
+  //     description: 'Returns filtered office locations',
+  //   })
+  //   filter(@Query() filterDto: FilterOfficeLocationDto) {
+  //     return this.officeLocationService.filter(filterDto);
+  //   }
 
   @Get(':id')
   @RequirePermission('read', 'OfficeLocation')

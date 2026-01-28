@@ -21,6 +21,7 @@ import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { QueryAdminDto } from './dto/query-admin.dto';
+import { FilterAdminDto } from './dto/filter-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
@@ -61,9 +62,7 @@ export class AdminController {
   @Get()
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('read', 'Admin')
-  @ApiOperation({
-    summary: 'Get all admins with optional pagination and filters',
-  })
+  @ApiOperation({ summary: 'Get all admins with pagination' })
   @ApiResponse({ status: 200, description: 'Returns paginated admins' })
   findAll(@Query() queryDto: QueryAdminDto) {
     return this.adminService.findAll(queryDto);
@@ -78,16 +77,19 @@ export class AdminController {
     return this.adminService.getAllAdmins();
   }
 
+  @Get('search/filter')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('read', 'Admin')
+  @ApiOperation({ summary: 'Filter admins by criteria' })
+  @ApiResponse({ status: 200, description: 'Returns filtered admins' })
+  filter(@Query() filterDto: FilterAdminDto) {
+    return this.adminService.filter(filterDto);
+  }
+
   @Get(':id')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('read', 'Admin')
   @ApiOperation({ summary: 'Get admin by ID' })
-  @ApiParam({
-    name: 'id',
-    type: 'string',
-    description: 'Admin UUID',
-    format: 'uuid',
-  })
   @ApiResponse({ status: 200, description: 'Returns admin' })
   @ApiResponse({ status: 404, description: 'Admin not found' })
   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {

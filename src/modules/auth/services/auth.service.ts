@@ -20,11 +20,11 @@ import { OfficeLocation } from '../entities/office-location.entity';
 import { Agency } from '../../agency/entities/agency.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { TokenType } from '../../../constants/token-type.ts';
-import { ApiConfigService } from '../../../shared/services/api-config.service.ts';
 import type { UserLoginDto } from '../dto/user-login.dto';
 import type { AdminLoginDto } from '../dto/admin-login.dto';
 import type { CreateAdminDto } from '../dto/create-admin.dto';
 import { randomBytes } from 'node:crypto';
+import { ApiConfigService } from '../../../shared/services/api-config.service';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -42,6 +42,7 @@ export interface LoginResponse {
   message: string;
   accessToken: string;
   refreshToken: string;
+  expiresIn: number;
   user: {
     id: string;
     cidNo: string;
@@ -149,6 +150,7 @@ export class AuthService {
       message: 'Logged in successfully as Citizen',
       accessToken,
       refreshToken,
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
       user: {
         id: user.id,
         cidNo: user.cidNo,
@@ -237,6 +239,7 @@ export class AuthService {
         message: 'Logged in successfully as Super Admin',
         accessToken,
         refreshToken,
+        expiresIn: this.configService.authConfig.jwtExpirationTime,
         user: {
           id: admin.id,
           cidNo: admin.cidNo,
@@ -291,6 +294,7 @@ export class AuthService {
       message: 'Logged in successfully as Admin',
       accessToken,
       refreshToken,
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
       user: {
         id: admin.id,
         cidNo: admin.cidNo,
@@ -421,7 +425,7 @@ export class AuthService {
    */
   private async generateAccessToken(payload: JwtPayload): Promise<string> {
     return this.jwtService.signAsync(payload, {
-      expiresIn: '15m', // 15 minutes
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
     });
   }
 
@@ -599,10 +603,9 @@ export class AuthService {
       jti, // unique token ID
     };
 
-    // Get expiration time from config (in seconds)
-    const expirationSeconds = this.configService.authConfig.refreshTokenExpirationTime;
+    // 3 months = 90 days
     const refreshToken = await this.jwtService.signAsync(payload, {
-      expiresIn: expirationSeconds,
+      expiresIn: '90d',
     });
 
     return refreshToken;
@@ -618,8 +621,8 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<void> {
-    const expirationSeconds = this.configService.authConfig.refreshTokenExpirationTime;
-    const expiresAt = new Date(Date.now() + expirationSeconds * 1000);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 90); // 3 months
 
     await this.refreshTokenRepository.save({
       token,
@@ -643,7 +646,7 @@ export class AuthService {
     refreshToken: string,
     ipAddress?: string,
     userAgent?: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
     // 1. Verify refresh token signature
     let payload: any;
     try {
@@ -760,6 +763,7 @@ export class AuthService {
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
     };
   }
 
