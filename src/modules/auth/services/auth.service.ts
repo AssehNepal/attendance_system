@@ -9,8 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '../../users/entities/user.entity';
 import { UsersService } from '../../users/users.service';
+import { NdiService } from './ndi.service';
 import { Admin } from '../entities/admin.entity';
 import { Role } from '../entities/role.entity';
 import { Permission } from '../entities/permission.entity';
@@ -20,7 +20,6 @@ import { OfficeLocation } from '../entities/office-location.entity';
 import { Agency } from '../../agency/entities/agency.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { TokenType } from '../../../constants/token-type.ts';
-import type { UserLoginDto } from '../dto/user-login.dto';
 import type { AdminLoginDto } from '../dto/admin-login.dto';
 import type { CreateAdminDto } from '../dto/create-admin.dto';
 import { randomBytes } from 'node:crypto';
@@ -79,51 +78,72 @@ export class AuthService {
     private readonly refreshTokenRepository: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
     private readonly configService: ApiConfigService,
+    private readonly ndiService: NdiService,
   ) {}
 
   /**
-   * CITIZEN LOGIN
-   * Auto-creates user on first login
-   * Citizens don't have roles/permissions - only store their data
+   * CITIZEN LOGIN - NDI BASED
+   * Creates NDI proof request, user scans QR, authentication happens via NATS callback
    */
-  async loginCitizen(
-    loginDto: UserLoginDto,
+  async loginCitizen(ipAddress?: string, userAgent?: string): Promise<any> {
+    console.log(
+      '🔍 [loginCitizen] Creating NDI proof request for citizen login',
+    );
+
+    // Create NDI proof request - this returns QR code for user to scan
+    const ndiResponse = await this.ndiService.createProofRequest({
+      proofName: 'Verify Identity for Census Login',
+      attributes: ['ID Number', 'Full Name', 'Date of Birth', 'Gender'],
+    });
+
+    // Register callback to authenticate user when NDI verification completes
+    this.ndiService.registerVerificationCallback(
+      ndiResponse.proofRequestThreadId,
+      async (ndiData: { cidNo: string }) => {
+        // This callback is called when user scans QR and completes verification
+        await this.authenticateCitizenWithNDI(ndiData, ipAddress, userAgent);
+      },
+    );
+
+    return {
+      message: 'Scan QR code with NDI app to complete login',
+      proofRequestThreadId: ndiResponse.proofRequestThreadId,
+      deepLinkURL: ndiResponse.deepLinkURL,
+      proofRequestURL: ndiResponse.proofRequestURL,
+      accessToken: ndiResponse.accessToken, // NDI API access token
+      tokenType: ndiResponse.tokenType,
+    };
+  }
+
+  /**
+   * AUTHENTICATE CITIZEN WITH VERIFIED NDI DATA
+   * Called by NATS handler after NDI verification completes
+   */
+  async authenticateCitizenWithNDI(
+    ndiData: {
+      cidNo: string;
+    },
     ipAddress?: string,
     userAgent?: string,
   ): Promise<LoginResponse> {
     console.log(
-      '🔍 [loginCitizen] Processing citizen login for CID:',
-      loginDto.cidNo,
+      '🔍 [authenticateCitizenWithNDI] Processing NDI-verified login for CID:',
+      ndiData.cidNo,
     );
 
-    const { cidNo, password, ndiDeeplink } = loginDto;
-
-    // Validate that at least password or NDI deeplink is provided
-    if (!password && !ndiDeeplink) {
-      throw new BadRequestException(
-        'Either password or NDI deeplink is required',
-      );
-    }
-
     // Check if user exists
-    let user = await this.usersService.findByCidNo(cidNo);
+    let user = await this.usersService.findByCidNo(ndiData.cidNo);
 
-    // First time login - auto-create user
+    // First time login - auto-create user with verified CID
     if (!user) {
-      user = await this.createCitizenUser(cidNo, password, ndiDeeplink);
+      user = await this.usersService.create({
+        cidNo: ndiData.cidNo,
+      });
+      console.log('✅ [authenticateCitizenWithNDI] Created new citizen user');
     } else {
-      // Existing user - verify credentials
-      if (password && user.password) {
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-          throw new UnauthorizedException('Invalid credentials');
-        }
-      }
-
-      // Update NDI deeplink if provided
-      if (ndiDeeplink) {
-        await this.usersService.update(user.id, { ndiDeeplink });
-      }
+      console.log(
+        '✅ [authenticateCitizenWithNDI] Found existing citizen user',
+      );
     }
 
     // Generate access token (15 minutes)
@@ -202,12 +222,6 @@ export class AuthService {
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Update ndiDeeplink if provided
-    if (loginDto.ndiDeeplink !== undefined) {
-      admin.ndiDeeplink = loginDto.ndiDeeplink;
-      await this.adminRepository.save(admin);
     }
 
     // Check if SUPER_ADMIN (bypass role/permission checks)
@@ -303,30 +317,6 @@ export class AuthService {
       },
       ability,
     };
-  }
-
-  /**
-   * AUTO-CREATE CITIZEN USER
-   * Called on first login - just stores user data
-   */
-  private async createCitizenUser(
-    cidNo: string,
-    password?: string,
-    ndiDeeplink?: string,
-  ): Promise<User> {
-    // Hash password if provided
-    const hashedPassword = password
-      ? await bcrypt.hash(password, BCRYPT_ROUNDS)
-      : null;
-
-    // Create user
-    const user = await this.usersService.create({
-      cidNo,
-      password: hashedPassword || undefined,
-      ndiDeeplink: ndiDeeplink || undefined,
-    });
-
-    return user;
   }
 
   /**

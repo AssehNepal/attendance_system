@@ -16,7 +16,6 @@ export class CreateAdminTable1705075200006 implements MigrationInterface {
         "agency_id" uuid,
         "mobile_no" character varying(20),
         "email" character varying(255),
-        "ndi_deeplink" character varying(255),
         CONSTRAINT "UQ_admin_cid_no" UNIQUE ("cid_no"),
         CONSTRAINT "PK_admin" PRIMARY KEY ("id")
       )

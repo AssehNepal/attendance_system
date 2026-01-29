@@ -16,6 +16,15 @@ export class NdiService {
   private tokenExpiry: number | null = null;
   private tokenType: string = 'Bearer';
   private natsConnection: NatsConnection | null = null;
+  private verificationCallbacks: Map<
+    string,
+    (data: {
+      cidNo: string;
+      fullName?: string;
+      dateOfBirth?: string;
+      gender?: string;
+    }) => Promise<void>
+  > = new Map();
 
   constructor(private configService: ConfigService) {}
 
@@ -237,6 +246,23 @@ export class NdiService {
   }
 
   /**
+   * Register a callback to be called when NDI verification completes
+   * Used for citizen login flow - when user scans QR, this callback completes authentication
+   */
+  registerVerificationCallback(
+    threadId: string,
+    callback: (data: {
+      cidNo: string;
+      fullName?: string;
+      dateOfBirth?: string;
+      gender?: string;
+    }) => Promise<void>,
+  ): void {
+    this.verificationCallbacks.set(threadId, callback);
+    this.logger.log(`📝 Registered callback for threadId: ${threadId}`);
+  }
+
+  /**
    * Listen for NATS response on the proof request thread
    * This runs in the background and logs the presentation when received
    */
@@ -272,11 +298,19 @@ export class NdiService {
       });
 
       this.logger.log(`✅ Connected to NDI NATS for threadId: ${threadId}`);
+      this.logger.log(
+        `🔌 Connection status: ${this.natsConnection.isClosed() ? 'CLOSED' : 'OPEN'}`,
+      );
+      this.logger.log(
+        `🔌 Server info: ${JSON.stringify(this.natsConnection.info, null, 2)}`,
+      );
 
       // Handle connection closure
       this.natsConnection.closed().then((err) => {
         if (err) {
-          this.logger.error(`NATS connection closed: ${err.message}`);
+          this.logger.error(
+            `NATS connection closed with error: ${err.message}`,
+          );
         } else {
           this.logger.log('NATS connection closed normally');
         }
@@ -287,12 +321,19 @@ export class NdiService {
       const subscription = this.natsConnection.subscribe(subject);
 
       this.logger.log(`📡 Subscribed to subject: ${subject}`);
+      this.logger.log(`📡 Subscription object created: ${!!subscription}`);
+      this.logger.log(`📡 Is subscription closed: ${subscription.isClosed()}`);
       this.logger.log('Waiting for NDI verification response...');
+      this.logger.log('⏳ Listening for messages on NATS...');
 
       // Listen for messages in background (async iterator pattern)
       (async () => {
         try {
+          this.logger.log('🔄 Starting async iterator loop...');
+          let messageCount = 0;
           for await (const msg of subscription) {
+            messageCount++;
+            this.logger.log(`📬 Message #${messageCount} received!`);
             const messageString = sc.decode(msg.data);
             this.logger.log('='.repeat(80));
             this.logger.log('📨 RAW NATS MESSAGE RECEIVED');
@@ -325,7 +366,30 @@ export class NdiService {
                 this.logger.log('='.repeat(80));
 
                 if (data.type === 'present-proof/presentation-result') {
-                  this.handleVerificationResult(data);
+                  const ndiData = this.handleVerificationResult(data);
+
+                  // Call registered callback if available
+                  if (ndiData && this.verificationCallbacks.has(threadId)) {
+                    const callback = this.verificationCallbacks.get(threadId);
+                    if (callback) {
+                      this.logger.log(
+                        '🔔 Calling registered authentication callback...',
+                      );
+                      try {
+                        await callback(ndiData);
+                        this.logger.log(
+                          '✅ Authentication callback completed successfully',
+                        );
+                      } catch (callbackError) {
+                        this.logger.error(
+                          '❌ Authentication callback failed:',
+                          callbackError,
+                        );
+                      }
+                      // Clean up callback after use
+                      this.verificationCallbacks.delete(threadId);
+                    }
+                  }
                 } else {
                   this.logger.warn('❌ Proof request was rejected by user');
                 }
@@ -347,9 +411,15 @@ export class NdiService {
               this.logger.log('Raw message:', messageString);
             }
           }
+          this.logger.log('🔚 Async iterator loop ended (no more messages)');
         } catch (err) {
-          this.logger.error('Subscription error:', err);
+          this.logger.error('❌ Subscription error:', err);
+          this.logger.error(
+            'Error stack:',
+            err instanceof Error ? err.stack : 'No stack',
+          );
         }
+        this.logger.log('🏁 NATS listener function completed');
       })();
     } catch (error) {
       this.logger.error('Failed to listen for NATS response', error);
@@ -359,8 +429,11 @@ export class NdiService {
 
   /**
    * Handle verification result from NDI
+   * Extracts CID for authentication
    */
-  private handleVerificationResult(data: any): void {
+  private handleVerificationResult(data: any): {
+    cidNo: string;
+  } | null {
     this.logger.log('='.repeat(80));
     this.logger.log('🎉 NDI PROOF VALIDATED');
     this.logger.log('='.repeat(80));
@@ -372,21 +445,26 @@ export class NdiService {
         this.logger.log('📝 Revealed Attributes:');
         this.logger.log('='.repeat(80));
 
-        // Extract attributes - values are returned as arrays
-        const idNumber = attributes['ID Number']?.[0]?.value;
-        const fullName = attributes['Full Name']?.[0]?.value;
-        const dateOfBirth = attributes['Date of Birth']?.[0]?.value;
-        const gender = attributes['Gender']?.[0]?.value;
+        // Extract CID - the only attribute we need for authentication
+        const cidNo = attributes['ID Number']?.[0]?.value;
 
-        if (idNumber) this.logger.log(`ID Number: ${idNumber}`);
-        if (fullName) this.logger.log(`Full Name: ${fullName}`);
-        if (dateOfBirth) this.logger.log(`Date of Birth: ${dateOfBirth}`);
-        if (gender) this.logger.log(`Gender: ${gender}`);
+        if (cidNo) {
+          this.logger.log(`✅ Verified CID Number: ${cidNo}`);
+        } else {
+          this.logger.error('❌ CID Number not found in NDI response');
+          return null;
+        }
 
-        // Log all attributes
+        // Log all attributes for debugging
         this.logger.log('='.repeat(80));
         this.logger.log('All Attributes (Raw):');
         this.logger.log(JSON.stringify(attributes, null, 2));
+        this.logger.log('='.repeat(80));
+
+        // Return only CID for authentication
+        return {
+          cidNo,
+        };
       } else {
         this.logger.warn('No revealed attributes found in response');
       }
@@ -395,6 +473,7 @@ export class NdiService {
     }
 
     this.logger.log('='.repeat(80));
+    return null;
   }
 
   /**

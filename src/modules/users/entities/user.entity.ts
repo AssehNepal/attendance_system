@@ -18,9 +18,6 @@ export class User extends AbstractEntity {
   @Column({ type: 'varchar', nullable: true, name: 'password' })
   @Exclude({ toPlainOnly: true })
   password?: string;
-
-  @Column({ type: 'text', nullable: true, name: 'ndi_deeplink' })
-  ndiDeeplink?: string;
 }
 
 // Export alias for backward compatibility

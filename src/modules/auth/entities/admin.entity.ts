@@ -41,14 +41,6 @@ export class Admin extends AbstractEntity {
   @Column({ type: 'varchar', length: 255, nullable: true, name: 'email' })
   email?: string;
 
-  @Column({
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-    name: 'ndi_deeplink',
-  })
-  ndiDeeplink?: string;
-
   @OneToMany('AdminRole', 'admin', { cascade: true })
   adminRoles!: AdminRole[];
 }

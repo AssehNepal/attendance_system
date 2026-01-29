@@ -17,9 +17,4 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   password?: string;
-
-  @ApiPropertyOptional({ description: 'NDI Deeplink URL' })
-  @IsString()
-  @IsOptional()
-  ndiDeeplink?: string;
 }
