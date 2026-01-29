@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module.ts';
 import { AgencyModule } from '../agency/agency.module';
 import { AuthController } from './auth.controller.ts';
 import { AuthService } from './services/auth.service.ts';
+import { NdiService } from './services/ndi.service.ts';
 import { JwtStrategy } from './jwt.strategy.ts';
 import { PublicStrategy } from './public.strategy.ts';
 
@@ -57,7 +58,13 @@ import { SeedService } from './services/seed.service.ts';
     AgencyModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PublicStrategy, SeedService],
-  exports: [JwtModule, AuthService, SeedService],
+  providers: [
+    AuthService,
+    NdiService,
+    JwtStrategy,
+    PublicStrategy,
+    SeedService,
+  ],
+  exports: [JwtModule, AuthService, NdiService, SeedService],
 })
 export class AuthModule {}

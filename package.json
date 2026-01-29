@@ -74,6 +74,7 @@
     "mysql2": "^3.14.1",
     "nats": "^2.29.3",
     "nestjs-cls": "^5.4.3",
+    "nkeys.js": "^1.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.0",
