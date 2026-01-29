@@ -59,6 +59,13 @@ export class ApiConfigService {
     return value.toString().replaceAll(String.raw`\n`, '\n');
   }
 
+  get commonServiceTcpOptions() {
+    return {
+      host: this.getString('COMMON_SERVICE_TCP_HOST'),
+      port: this.getNumber('COMMON_SERVICE_TCP_PORT'),
+    };
+  }
+
   get nodeEnv(): string {
     return this.getString('NODE_ENV');
   }
