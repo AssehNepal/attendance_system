@@ -108,8 +108,6 @@ export class AuthController {
     return this.ndiService.createProofRequest(createProofRequestDto, 'ADMIN');
   }
 
-
-
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
@@ -121,8 +119,8 @@ export class AuthController {
     @Body() adminLoginDto: AdminLoginDto,
     @Req() req: Request,
   ): Promise<LoginResponse> {
-    const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress = this.getClientIp(req);
+    const userAgent = req.headers['user-agent'] as string;
     return this.authService.loginAdmin(adminLoginDto, ipAddress, userAgent);
   }
 
@@ -137,8 +135,8 @@ export class AuthController {
     @Body('refreshToken') refreshToken: string,
     @Req() req: Request,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress = this.getClientIp(req);
+    const userAgent = req.headers['user-agent'] as string;
     return this.authService.refreshAccessToken(
       refreshToken,
       ipAddress,
@@ -158,7 +156,6 @@ export class AuthController {
     await this.authService.logout(refreshToken);
     return { message: 'Logged out successfully' };
   }
-
 
   @Get('ndi/health')
   @HttpCode(HttpStatus.OK)
@@ -207,17 +204,10 @@ export class AuthController {
 
     const eventName = `ndi.verification.${threadId}`;
     console.log(`🔌 [streamNdiStatus] Client connected to SSE stream for thread: ${threadId}`);
-    console.log(`👂 [streamNdiStatus] Listening for event: ${eventName}`);
-
-    const listener = async (payload: { status: string; cidNo?: string; loginData?: any }) => {
-      // Just forward the payload, as login logic is now in NdiService (Auto-Login)
-      if (payload.status === 'verified') {
-         console.log('✅ [streamNdiStatus] Forwarding Auto-Login Data to Stream');
-      }
-      
+    
+    const listener = (payload: any) => {
       response.write(`data: ${JSON.stringify(payload)}\n\n`);
 
-      // Close stream on terminal states
       if (
         payload.status === 'verified' || 
         payload.status === 'failed' || 
@@ -229,28 +219,31 @@ export class AuthController {
 
     this.eventEmitter.on(eventName, listener);
 
-    // Keepalive
     const interval = setInterval(() => {
       if (!response.writableEnded) {
         response.write(': keepalive\n\n');
       }
     }, 15000);
 
-    // Cleanup
     response.on('close', () => {
       clearInterval(interval);
       this.eventEmitter.off(eventName, listener);
     });
 
-    // Timeout (5 mins)
     setTimeout(() => {
       if (!response.writableEnded) {
-        response.write(
-          `data: ${JSON.stringify({ status: 'timeout' })}\n\n`,
-        );
+        response.write(`data: ${JSON.stringify({ status: 'timeout' })}\n\n`);
         response.end();
         this.eventEmitter.off(eventName, listener);
       }
     }, 300000);
+  }
+
+  private getClientIp(req: Request): string {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor && typeof forwardedFor === 'string') {
+      return forwardedFor.split(',')[0]?.trim() ?? '';
+    }
+    return req.ip ?? req.socket?.remoteAddress ?? 'unknown';
   }
 }

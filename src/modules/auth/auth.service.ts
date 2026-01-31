@@ -673,8 +673,7 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<void> {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 90); // 3 months
+    const expiresAt = new Date(Date.now() + this.configService.authConfig.jwtRefreshExpirationTime * 1000);
 
     await this.refreshTokenRepository.save({
       token,
