@@ -7,21 +7,20 @@ import { ApiConfigService } from '../../shared/services/api-config.service.ts';
 import { UsersModule } from '../users/users.module.ts';
 import { AgencyModule } from '../agency/agency.module';
 import { AuthController } from './auth.controller.ts';
-import { AuthService } from './services/auth.service.ts';
-import { NdiService } from './services/ndi.service.ts';
-import { JwtStrategy } from './jwt.strategy.ts';
-import { PublicStrategy } from './public.strategy.ts';
+import { AuthService } from './auth.service';
+import { NdiService } from './ndi.service';
+import { JwtStrategy } from './jwt.strategy';
+import { PublicStrategy } from './public.strategy';
 
 // Import all auth entities
-import { Admin } from './entities/admin.entity.ts';
-import { AdminRole } from './entities/admin-role.entity.ts';
-import { OfficeLocation } from './entities/office-location.entity.ts';
-import { Permission } from './entities/permission.entity.ts';
-import { Role } from './entities/role.entity.ts';
-import { RolePermission } from './entities/role-permission.entity.ts';
-import { RefreshToken } from './entities/refresh-token.entity.ts';
-import { User } from '../users/entities/user.entity.ts';
-import { SeedService } from './services/seed.service.ts';
+import { Admin } from './entities/admin.entity';
+import { AdminRole } from './entities/admin-role.entity';
+import { OfficeLocation } from './entities/office-location.entity';
+import { Permission } from './entities/permission.entity';
+import { Role } from './entities/role.entity';
+import { RolePermission } from './entities/role-permission.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
@@ -63,8 +62,7 @@ import { SeedService } from './services/seed.service.ts';
     NdiService,
     JwtStrategy,
     PublicStrategy,
-    SeedService,
   ],
-  exports: [JwtModule, AuthService, NdiService, SeedService],
+  exports: [JwtModule, AuthService, NdiService],
 })
 export class AuthModule {}

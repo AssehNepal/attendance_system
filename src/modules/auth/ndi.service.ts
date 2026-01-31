@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   connect,
   type NatsConnection,
@@ -7,7 +8,12 @@ import {
   nkeyAuthenticator,
 } from 'nats';
 
-import { CreateProofRequestDto } from '../dto/create-proof-request.dto';
+import { CreateProofRequestDto } from './dto/create-proof-request.dto';
+
+import { ModuleRef } from '@nestjs/core';
+import { AuthService } from './auth.service';
+
+// ... existing imports
 
 @Injectable()
 export class NdiService {
@@ -16,117 +22,77 @@ export class NdiService {
   private tokenExpiry: number | null = null;
   private tokenType: string = 'Bearer';
   private natsConnection: NatsConnection | null = null;
-  private verificationCallbacks: Map<
-    string,
-    (data: {
-      cidNo: string;
-      fullName?: string;
-      dateOfBirth?: string;
-      gender?: string;
-    }) => Promise<void>
-  > = new Map();
 
-  constructor(private configService: ConfigService) {}
+  // Store login context (ADMIN or CITIZEN) for each thread
+  private verificationContexts: Map<string, 'ADMIN' | 'CITIZEN'> = new Map();
+  
+  // Lazily injected property
+  private authService!: AuthService;
+
+  constructor(
+    private configService: ConfigService,
+    private eventEmitter: EventEmitter2,
+    private moduleRef: ModuleRef,
+  ) {}
+
+  onModuleInit() {
+    this.authService = this.moduleRef.get(AuthService, { strict: false });
+  }
 
   /**
-   * Authenticate with NDI using OAuth 2.0 Client Credentials
-   * Caches the token with a 5-minute buffer before expiry
-   * @returns The access token string
+   * Authenticate with NDI to get Bearer token
    */
   async authenticate(): Promise<string> {
-    // Check if we have a valid cached token
+    const authUrl = this.configService.get<string>('NDI_AUTH_URL');
+    const clientId = this.configService.get<string>('NDI_CLIENT_ID');
+    const clientSecret = this.configService.get<string>('NDI_CLIENT_SECRET');
+
+    if (!authUrl || !clientId || !clientSecret) {
+      throw new Error('NDI Authentication configuration missing');
+    }
+
+    // Return cached token if valid
     if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
-    const authUrl = this.configService.get<string>('NDI_AUTH_URL');
-    const clientId = this.configService.get<string>('NDI_CLIENT_ID');
-    const clientSecret = this.configService.get<string>('NDI_CLIENT_SECRET');
-    const grantType = this.configService.get<string>(
-      'NDI_GRANT_TYPE',
-      'client_credentials',
-    );
-
-    // Validate required environment variables
-    if (!authUrl) {
-      throw new Error(
-        'NDI_AUTH_URL is not configured in environment variables',
-      );
-    }
-    if (!clientId) {
-      throw new Error(
-        'NDI_CLIENT_ID is not configured in environment variables',
-      );
-    }
-    if (!clientSecret) {
-      throw new Error(
-        'NDI_CLIENT_SECRET is not configured in environment variables',
-      );
-    }
-
-    const params = new URLSearchParams({
-      grant_type: grantType,
-      client_id: clientId,
-      client_secret: clientSecret,
-    });
-
-    this.logger.log('='.repeat(80));
-    this.logger.log('NDI OAuth Authentication Request');
-    this.logger.log('='.repeat(80));
-    this.logger.log(`URL: ${authUrl}`);
-    this.logger.log(`Grant Type: ${grantType}`);
-    this.logger.log(`Client ID: ${clientId}`);
-    this.logger.log(`Body: ${params.toString()}`);
-    this.logger.log('='.repeat(80));
-
     try {
-      const response = await fetch(authUrl, {
+      // Handle potential double path if Env var includes the path already
+      const url = authUrl.endsWith('/authenticate') 
+        ? authUrl 
+        : `${authUrl}/authentication/v1/authenticate`;
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: params.toString(),
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: 'client_credentials',
+        }),
       });
 
-      this.logger.log(
-        `OAuth Response Status: ${response.status} ${response.statusText}`,
-      );
-
       if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.error('OAuth Error Response:', errorText);
-        throw new Error(
-          `OAuth authentication failed: ${response.status} - ${errorText}`,
-        );
+        const text = await response.text();
+        throw new Error(`Authentication failed: ${response.status} - ${text}`);
       }
 
-      const data = (await response.json()) as {
-        access_token: string;
-        expires_in: number;
-        token_type: string;
-      };
-
+      const data = await response.json() as any;
       this.accessToken = data.access_token;
-      this.tokenType = data.token_type || 'Bearer';
-
-      // Cache token with 5-minute buffer
-      const expiresIn = data.expires_in || 86400; // Default 24 hours if not provided
-      this.tokenExpiry = Date.now() + (expiresIn - 300) * 1000;
-
-      this.logger.log(
-        `Successfully authenticated with NDI OAuth (expires in ${expiresIn}s)`,
-      );
-      return this.accessToken;
-    } catch (error) {
-      this.logger.error('Failed to authenticate with NDI', error);
-      throw error;
+      // Expires in seconds (usually 3600), buffer 60s
+      this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+      
+      return this.accessToken as string;
+    } catch (err) {
+      this.logger.error('Failed to authenticate with NDI', err);
+      throw err;
     }
   }
 
   /**
-   * Get the current NDI access token (will authenticate if needed)
-   * Use this method to get the token for calling other NDI protected services
-   * @returns Object with access token and token type
+   * Get formatted access token (used by controller test endpoint)
    */
   async getAccessToken(): Promise<{ accessToken: string; tokenType: string }> {
     const token = await this.authenticate();
@@ -137,19 +103,13 @@ export class NdiService {
   }
 
   /**
-   * Get authorization header value for NDI API calls
-   * @returns Authorization header string (e.g., "Bearer eyJraWQ...")
-   */
-  async getAuthorizationHeader(): Promise<string> {
-    const token = await this.authenticate();
-    return `${this.tokenType} ${token}`;
-  }
-
-  /**
    * Create a proof request for digital identity verification
    * Returns threadId, deepLinkURL, proofRequestURL (QR code), and access token for other NDI API calls
    */
-  async createProofRequest(dto: CreateProofRequestDto): Promise<{
+  async createProofRequest(
+    dto: CreateProofRequestDto,
+    loginType: 'ADMIN' | 'CITIZEN' = 'CITIZEN',
+  ): Promise<{
     proofRequestThreadId: string;
     deepLinkURL: string;
     proofRequestURL: string;
@@ -160,31 +120,17 @@ export class NdiService {
     const verifierUrl = this.configService.get<string>('NDI_VERIFIER_URL');
     const schemaName = this.configService.get<string>('NDI_SCHEMA_NAME');
 
-    // Validate required environment variables
-    if (!verifierUrl) {
-      throw new Error(
-        'NDI_VERIFIER_URL is not configured in environment variables',
-      );
-    }
-    if (!schemaName) {
-      throw new Error(
-        'NDI_SCHEMA_NAME is not configured in environment variables',
-      );
-    }
+    if (!verifierUrl) throw new Error('NDI_VERIFIER_URL not configured');
+    if (!schemaName) throw new Error('NDI_SCHEMA_NAME not configured');
 
     const proofName = dto.proofName || 'Verify Foundational ID';
     const attributes = dto.attributes || ['ID Number', 'Full Name'];
 
-    // Build request body with correct format
     const requestBody = {
       proofName,
       proofAttributes: attributes.map((attr) => ({
         name: attr,
-        restrictions: [
-          {
-            schema_name: schemaName,
-          },
-        ],
+        restrictions: [{ schema_name: schemaName }],
       })),
     };
 
@@ -200,26 +146,13 @@ export class NdiService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `Proof request creation failed: ${response.status} - ${errorText}`,
-        );
+        throw new Error(`Proof request failed: ${response.status} - ${errorText}`);
       }
 
       const response_data = await response.json();
-
-      // Log the complete API response for debugging
-      this.logger.log('='.repeat(80));
-      this.logger.log('📡 PROOF REQUEST API RESPONSE');
-      this.logger.log('='.repeat(80));
-      this.logger.log(`Response Status: ${response.status}`);
-      this.logger.log('Response Body:');
-      this.logger.log(JSON.stringify(response_data, null, 2));
-      this.logger.log('='.repeat(80));
-
-      // Extract the actual data from the nested response
       const data = (response_data as any).data || response_data;
 
-      // Extract threadId - it's in data.proofRequestThreadId
+      // Extract threadId
       const threadId =
         data.proofRequestThreadId ||
         data.thread_id ||
@@ -229,7 +162,10 @@ export class NdiService {
         data.requestId;
 
       this.logger.log(`Extracted ThreadId: ${threadId}`);
-      this.logger.log(`Request body: ${JSON.stringify(requestBody, null, 2)}`);
+      
+      // Store context for this thread
+      this.verificationContexts.set(threadId, loginType);
+      this.logger.log(`📝 Set login context to ${loginType} for thread ${threadId}`);
 
       // Start listening for NATS response in background
       void this.listenForNatsResponse(threadId);
@@ -240,27 +176,12 @@ export class NdiService {
         tokenType: this.tokenType,
       };
     } catch (error) {
-      this.logger.error('Failed to create proof request', error);
-      throw error;
+       this.logger.error('Failed to create proof request', error);
+       throw error;
     }
   }
 
-  /**
-   * Register a callback to be called when NDI verification completes
-   * Used for citizen login flow - when user scans QR, this callback completes authentication
-   */
-  registerVerificationCallback(
-    threadId: string,
-    callback: (data: {
-      cidNo: string;
-      fullName?: string;
-      dateOfBirth?: string;
-      gender?: string;
-    }) => Promise<void>,
-  ): void {
-    this.verificationCallbacks.set(threadId, callback);
-    this.logger.log(`📝 Registered callback for threadId: ${threadId}`);
-  }
+
 
   /**
    * Listen for NATS response on the proof request thread
@@ -368,30 +289,57 @@ export class NdiService {
                 if (data.type === 'present-proof/presentation-result') {
                   const ndiData = this.handleVerificationResult(data);
 
-                  // Call registered callback if available
-                  if (ndiData && this.verificationCallbacks.has(threadId)) {
-                    const callback = this.verificationCallbacks.get(threadId);
-                    if (callback) {
-                      this.logger.log(
-                        '🔔 Calling registered authentication callback...',
+
+                  if (ndiData) {
+                    this.logger.log(`✅ Emitting verification event for ${threadId}`);
+                    
+                    const loginType = this.verificationContexts.get(threadId) || 'CITIZEN';
+                    this.logger.log(`🔍 Processing login for context: ${loginType}`);
+
+                    // ---------------------------------------------------------
+                    // AUTO-LOGIN LOGIC
+                    // ---------------------------------------------------------
+                    try {
+                      this.logger.log(`⏳ Auto-logging in user with CID: ${ndiData.cidNo}`);
+                      
+                      const loginData = await this.authService.authenticateViaNDI(
+                         { cidNo: ndiData.cidNo }, 
+                         loginType,
+                         '0.0.0.0', 
+                         'NDI-Background-Verification'
                       );
-                      try {
-                        await callback(ndiData);
-                        this.logger.log(
-                          '✅ Authentication callback completed successfully',
-                        );
-                      } catch (callbackError) {
-                        this.logger.error(
-                          '❌ Authentication callback failed:',
-                          callbackError,
-                        );
-                      }
-                      // Clean up callback after use
-                      this.verificationCallbacks.delete(threadId);
+                      
+                      this.logger.log(`🎉 Auto-Login (${loginType}) Successful!`);
+                      
+                      // Emit specific event with FULL login data
+                      this.eventEmitter.emit(`ndi.verification.${threadId}`, {
+                        status: 'verified',
+                        cidNo: ndiData.cidNo,
+                        loginData: loginData
+                      });
+                      
+                      // Clean up context
+                       this.verificationContexts.delete(threadId);
+                      
+                    } catch (err: any) {
+                       this.logger.error(`❌ Auto-Login (${loginType}) Failed:`, err);
+                       this.eventEmitter.emit(`ndi.verification.${threadId}`, {
+                          status: 'failed',
+                          error: err.message || 'Auto-login failed after verification'
+                       });
+                       this.verificationContexts.delete(threadId);
                     }
+                  } else {
+                    this.eventEmitter.emit(`ndi.verification.${threadId}`, {
+                      status: 'failed',
+                      error: 'CID not found in proof',
+                    });
                   }
                 } else {
                   this.logger.warn('❌ Proof request was rejected by user');
+                  this.eventEmitter.emit(`ndi.verification.${threadId}`, {
+                    status: 'rejected',
+                  });
                 }
 
                 // Cleanup: Stop listening after terminal event

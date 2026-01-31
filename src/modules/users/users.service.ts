@@ -24,11 +24,18 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     // 1. Validate CID length (400 Bad Request)
-    if (createUserDto.cidNo.length < 11 || createUserDto.cidNo.length > 20) {
-      throw new BadRequestException('CID must be between 11 and 20 characters');
+    if (createUserDto.cidNo.length < 1 || createUserDto.cidNo.length > 20) {
+      throw new BadRequestException('CID must be at least 1 character');
     }
 
-    // 2. Check if user with CID already exists (409 Conflict)
+    // 2. Validate password length if provided (400 Bad Request)
+    if (createUserDto.password && createUserDto.password.length < 8) {
+      throw new BadRequestException(
+        'Password must be at least 8 characters long',
+      );
+    }
+
+    // 3. Check if user with CID already exists (409 Conflict)
     const existing = await this.userRepository.findOne({
       where: { cidNo: createUserDto.cidNo },
     });

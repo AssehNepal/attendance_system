@@ -44,11 +44,11 @@ const question = (query: string): Promise<string> => {
 
 // Validation functions
 const validateCID = (cid: string): boolean => {
-  return /^\d{11}$/.test(cid);
+  return /^\d{4,}$/.test(cid);
 };
 
 const validatePassword = (password: string): boolean => {
-  return password.length >= 11;
+  return password.length >= 1;
 };
 
 const validateUUID = (uuid: string): boolean => {
@@ -168,11 +168,11 @@ async function createSuperAdmin() {
     let password = '';
     while (!validatePassword(password)) {
       password = await question(
-        `${colors.blue}Enter Password (min 11 characters): ${colors.reset}`,
+        `${colors.blue}Enter Password (min 1 characters): ${colors.reset}`,
       );
       if (!validatePassword(password)) {
         console.log(
-          `${colors.red}❌ Password must be at least 11 characters!${colors.reset}\n`,
+          `${colors.red}❌ Password must be at least 1 characters!${colors.reset}\n`,
         );
       }
     }

@@ -27,8 +27,10 @@ export class RolesService {
 
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
     // 1. Validate name length (400 Bad Request)
-    if (createRoleDto.name.length > 100) {
-      throw new BadRequestException('Name must be less than 100 characters');
+    if (createRoleDto.name.length < 3 || createRoleDto.name.length > 100) {
+      throw new BadRequestException(
+        'Name must be between 3 and 100 characters',
+      );
     }
 
     // 2. Validate description length if provided (400 Bad Request)
@@ -59,37 +61,23 @@ export class RolesService {
       .leftJoinAndSelect('role.rolePermissions', 'rolePermissions')
       .leftJoinAndSelect('rolePermissions.permission', 'permission');
 
-    // Search by role name using general query parameter
     if (queryDto.q) {
-      queryBuilder.andWhere('role.name ILIKE :name', {
-        name: `${queryDto.q}%`,
+      queryBuilder.andWhere('role.name ILIKE :q', {
+        q: `%${queryDto.q}%`,
       });
     }
 
-    // Apply smart defaults for pagination
-    const page = queryDto.page ?? 1;
-    const take = queryDto.take ?? 10;
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
 
-    // Apply pagination
-    queryBuilder.skip((page - 1) * take).take(take);
-
-    // Apply ordering
     if (queryDto.order) {
       queryBuilder.orderBy('role.createdAt', queryDto.order as 'ASC' | 'DESC');
     }
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    // Create a modified query DTO with the actual values used
-    const actualQueryDto = {
-      ...queryDto,
-      page,
-      take,
-    };
-
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: actualQueryDto as any,
+      pageOptionsDto: queryDto,
     });
 
     return new PageDto(entities, pageMetaDto);

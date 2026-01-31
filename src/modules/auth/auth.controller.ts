@@ -1,3 +1,5 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { Request, Response } from 'express';
 import {
   Body,
   Controller,
@@ -6,18 +8,18 @@ import {
   Post,
   Get,
   Req,
+  Res,
+  Param,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
-import type { Request } from 'express';
 
-import { AuthService } from './services/auth.service';
-import type { LoginResponse } from './services/auth.service';
-import { NdiService } from './services/ndi.service';
-import { UserLoginDto } from './dto/user-login.dto';
+import { AuthService } from './auth.service';
+import type { LoginResponse } from './auth.service';
+import { NdiService } from './ndi.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { CreateProofRequestDto } from './dto/create-proof-request.dto';
-import { PublicRoute } from '../../decorators/public-route.decorator.ts';
+import { PublicRoute } from '../../decorators/public-route.decorator';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -25,74 +27,10 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private ndiService: NdiService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
-  @Post('citizen/login')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOkResponse({
-    type: LoginResponseDto,
-    description: 'Citizen login - auto-creates user on first login',
-  })
-  async citizenLogin(
-    @Body() userLoginDto: UserLoginDto,
-    @Req() req: Request,
-  ): Promise<LoginResponse> {
-    const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
-    return this.authService.loginCitizen(userLoginDto, ipAddress, userAgent);
-  }
-
-  @Post('admin/login')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOkResponse({
-    type: LoginResponseDto,
-    description: 'Admin/Super Admin login - requires pre-registration',
-  })
-  async adminLogin(
-    @Body() adminLoginDto: AdminLoginDto,
-    @Req() req: Request,
-  ): Promise<LoginResponse> {
-    const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
-    return this.authService.loginAdmin(adminLoginDto, ipAddress, userAgent);
-  }
-
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOkResponse({
-    description:
-      'Refresh access token using refresh token (with automatic rotation)',
-  })
-  async refreshToken(
-    @Body('refreshToken') refreshToken: string,
-    @Req() req: Request,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const ipAddress = req.ip || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
-    return this.authService.refreshAccessToken(
-      refreshToken,
-      ipAddress,
-      userAgent,
-    );
-  }
-
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOkResponse({
-    description: 'Logout (revoke refresh token)',
-  })
-  async logout(
-    @Body('refreshToken') refreshToken: string,
-  ): Promise<{ message: string }> {
-    await this.authService.logout(refreshToken);
-    return { message: 'Logged out successfully' };
-  }
-
-  @Post('ndi/proof-request')
+  @Post('ndi/user-login')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
   @ApiOperation({
@@ -151,6 +89,77 @@ export class AuthController {
     return this.ndiService.createProofRequest(createProofRequestDto);
   }
 
+  @Post('ndi/admin-login')
+  @HttpCode(HttpStatus.OK)
+  @PublicRoute()
+  @ApiOperation({
+    summary: 'Admin NDI Login',
+    description: 'Initiates NDI verification flow for administrators. Only existing admins can log in.',
+  })
+  async createAdminNdiProofRequest(
+    @Body() createProofRequestDto: CreateProofRequestDto,
+  ): Promise<{
+    proofRequestThreadId: string;
+    deepLinkURL: string;
+    proofRequestURL: string;
+    accessToken: string;
+    tokenType: string;
+  }> {
+    return this.ndiService.createProofRequest(createProofRequestDto, 'ADMIN');
+  }
+
+
+
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  @PublicRoute()
+  @ApiOkResponse({
+    type: LoginResponseDto,
+    description: 'Admin/Super Admin login - requires pre-registration',
+  })
+  async adminLogin(
+    @Body() adminLoginDto: AdminLoginDto,
+    @Req() req: Request,
+  ): Promise<LoginResponse> {
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.loginAdmin(adminLoginDto, ipAddress, userAgent);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @PublicRoute()
+  @ApiOkResponse({
+    description:
+      'Refresh access token using refresh token (with automatic rotation)',
+  })
+  async refreshToken(
+    @Body('refreshToken') refreshToken: string,
+    @Req() req: Request,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.refreshAccessToken(
+      refreshToken,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @PublicRoute()
+  @ApiOkResponse({
+    description: 'Logout (revoke refresh token)',
+  })
+  async logout(
+    @Body('refreshToken') refreshToken: string,
+  ): Promise<{ message: string }> {
+    await this.authService.logout(refreshToken);
+    return { message: 'Logged out successfully' };
+  }
+
+
   @Get('ndi/health')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
@@ -177,5 +186,71 @@ export class AuthController {
     tokenType: string;
   }> {
     return this.ndiService.getAccessToken();
+  }
+
+  @Get('ndi/stream/:threadId')
+  @PublicRoute()
+  @ApiOperation({
+    summary: 'Stream NDI verification status via Server-Sent Events',
+  })
+  @ApiOkResponse({
+    description: 'SSE stream of verification status updates and login token',
+  })
+  streamNdiStatus(
+    @Param('threadId') threadId: string,
+    @Res() response: Response,
+  ) {
+    response.setHeader('Content-Type', 'text/event-stream');
+    response.setHeader('Cache-Control', 'no-cache, no-transform');
+    response.setHeader('Connection', 'keep-alive');
+    response.flushHeaders();
+
+    const eventName = `ndi.verification.${threadId}`;
+    console.log(`🔌 [streamNdiStatus] Client connected to SSE stream for thread: ${threadId}`);
+    console.log(`👂 [streamNdiStatus] Listening for event: ${eventName}`);
+
+    const listener = async (payload: { status: string; cidNo?: string; loginData?: any }) => {
+      // Just forward the payload, as login logic is now in NdiService (Auto-Login)
+      if (payload.status === 'verified') {
+         console.log('✅ [streamNdiStatus] Forwarding Auto-Login Data to Stream');
+      }
+      
+      response.write(`data: ${JSON.stringify(payload)}\n\n`);
+
+      // Close stream on terminal states
+      if (
+        payload.status === 'verified' || 
+        payload.status === 'failed' || 
+        payload.status === 'rejected'
+      ) {
+        response.end();
+      }
+    };
+
+    this.eventEmitter.on(eventName, listener);
+
+    // Keepalive
+    const interval = setInterval(() => {
+      if (!response.writableEnded) {
+        response.write(': keepalive\n\n');
+      }
+    }, 15000);
+
+    // Cleanup
+    response.on('close', () => {
+      clearInterval(interval);
+      this.eventEmitter.off(eventName, listener);
+    });
+
+    // Timeout (5 mins)
+    setTimeout(() => {
+      if (!response.writableEnded) {
+        response.write(
+          `data: ${JSON.stringify({ status: 'timeout' })}\n\n`,
+        );
+        response.end();
+        this.eventEmitter.off(eventName, listener);
+      }
+    }, 300000);
   }
 }

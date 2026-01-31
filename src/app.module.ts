@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
@@ -21,6 +22,7 @@ import { SharedModule } from './shared/shared.module.ts';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     AuthModule,
     UsersModule,
     AdminModule,
