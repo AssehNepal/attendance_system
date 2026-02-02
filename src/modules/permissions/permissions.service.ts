@@ -11,6 +11,7 @@ import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { QueryPermissionDto } from './dto/query-permission.dto';
+import { FilterPermissionDto } from './dto/filter-permission.dto';
 import { Permission } from './entities/permission.entity';
 
 @Injectable()
@@ -76,21 +77,14 @@ export class PermissionsService {
     const queryBuilder =
       this.permissionRepository.createQueryBuilder('permission');
 
-    // Search by permission name using general query parameter
-    if (queryDto.q) {
+    if (queryDto.name) {
       queryBuilder.andWhere('permission.name ILIKE :name', {
-        name: `${queryDto.q}%`,
+        name: `%${queryDto.name}%`,
       });
     }
 
-    // Apply smart defaults for pagination
-    const page = queryDto.page ?? 1;
-    const take = queryDto.take ?? 10;
+    queryBuilder.skip(queryDto.skip).take(queryDto.take);
 
-    // Apply pagination
-    queryBuilder.skip((page - 1) * take).take(take);
-
-    // Apply ordering
     if (queryDto.order) {
       queryBuilder.orderBy(
         'permission.createdAt',
@@ -100,16 +94,9 @@ export class PermissionsService {
 
     const [entities, itemCount] = await queryBuilder.getManyAndCount();
 
-    // Create a modified query DTO with the actual values used
-    const actualQueryDto = {
-      ...queryDto,
-      page,
-      take,
-    };
-
     const pageMetaDto = new PageMetaDto({
       itemCount,
-      pageOptionsDto: actualQueryDto as any,
+      pageOptionsDto: queryDto,
     });
 
     return new PageDto(entities, pageMetaDto);
@@ -126,6 +113,37 @@ export class PermissionsService {
     }
 
     return permission;
+  }
+
+  async filter(filterDto: FilterPermissionDto): Promise<Permission[]> {
+    const queryBuilder =
+      this.permissionRepository.createQueryBuilder('permission');
+
+    if (filterDto.name) {
+      queryBuilder.andWhere('permission.name ILIKE :name', {
+        name: `%${filterDto.name}%`,
+      });
+    }
+
+    if (filterDto.description) {
+      queryBuilder.andWhere('permission.description ILIKE :description', {
+        description: `%${filterDto.description}%`,
+      });
+    }
+
+    if (filterDto.action) {
+      queryBuilder.andWhere('permission.actions @> :actions', {
+        actions: JSON.stringify([filterDto.action]),
+      });
+    }
+
+    if (filterDto.subject) {
+      queryBuilder.andWhere('permission.subjects @> :subjects', {
+        subjects: JSON.stringify([filterDto.subject]),
+      });
+    }
+
+    return queryBuilder.getMany();
   }
 
   async update(

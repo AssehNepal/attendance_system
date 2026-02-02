@@ -5,6 +5,9 @@
     },
     {
         "path": "../../../Education/admin-auth-service"
+    },
+    {
+        "path": "../common_service"
     }
 ],
 }

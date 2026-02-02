@@ -21,7 +21,7 @@ import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { QueryPermissionDto } from './dto/query-permission.dto';
-import { FilterPermissionDto } from './dto/filter-permission.dto';
+import { FilterPermissionDto } from './dto/filter-permission.dto.ts';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
 import { PermissionsGuard } from '../../guards/permissions.guard.ts';
