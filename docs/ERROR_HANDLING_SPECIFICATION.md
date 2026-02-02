@@ -545,7 +545,7 @@ This document defines the error handling standards for all modules in the Census
 ### CID Validation (Bhutan Specific)
 
 ```typescript
-@Matches(/^\d{11}$/, { message: 'CID must be exactly 11 digits' })
+@Matches(/^\d{2,}$/, { message: 'CID must be exactly 11 digits' })
 ```
 
 ### Mobile Number Validation (Bhutan Specific)

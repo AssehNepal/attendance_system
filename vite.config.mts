@@ -5,7 +5,7 @@ export default defineConfig({
   // ...vite configures
   server: {
     // vite server configs, for details see [vite doc](https://vitejs.dev/config/#server-host)
-    port: 3000
+    port: 5001,
   },
   plugins: [
     ...VitePluginNode({
@@ -15,7 +15,7 @@ export default defineConfig({
       adapter: 'nest',
       // tell the plugin where is your project entry
       appPath: './src/main.ts',
-      port: 3000,
+      port: 5001,
       outputFormat: 'esm',
       // Optional, default: false
       // if you want to init your app on boot, set this to true
@@ -43,7 +43,7 @@ export default defineConfig({
       // }
       // }
       // swc configs, see [swc doc](https://swc.rs/docs/configuration/swcrc)
-      swcOptions: {}
-    })
+      swcOptions: {},
+    }),
   ],
 });

@@ -7,12 +7,11 @@ import { IsArray, IsOptional, IsUUID, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAdminDto {
-  @StringField({ minLength: 11, maxLength: 11 })
+  @StringField({ minLength: 1 })
   @ApiProperty({
     description: 'Citizen ID Number (CID)',
     example: '11111111111',
-    minLength: 11,
-    maxLength: 11,
+    minLength: 1,
   })
   cidNo!: string;
 

@@ -22,8 +22,11 @@ export class NdiService implements OnModuleInit {
   private natsConnection: NatsConnection | null = null;
 
   // Store login context (ADMIN or CITIZEN) and timestamp for each thread
-  private verificationContexts: Map<string, { type: 'ADMIN' | 'CITIZEN'; timestamp: number }> = new Map();
-  
+  private verificationContexts: Map<
+    string,
+    { type: 'ADMIN' | 'CITIZEN'; timestamp: number }
+  > = new Map();
+
   // Cleanup settings
   private readonly VERIFICATION_TTL_MS = 10 * 60 * 1000; // 10 minutes
   private readonly CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
@@ -48,8 +51,10 @@ export class NdiService implements OnModuleInit {
   onModuleInit() {
     this.authService = this.moduleRef.get(AuthService, { strict: false });
     this.startCleanupInterval();
-    this.connectToInternalNats().catch(err => 
-      this.logger.warn(`Failed to connect to internal NATS for multi-pod sync: ${err.message}`)
+    this.connectToInternalNats().catch((err) =>
+      this.logger.warn(
+        `Failed to connect to internal NATS for multi-pod sync: ${err.message}`,
+      ),
     );
   }
 
@@ -70,7 +75,8 @@ export class NdiService implements OnModuleInit {
   }
 
   private async connectToInternalNats() {
-    const natsEnabled = this.configService.get<string>('NATS_ENABLED') === 'true';
+    const natsEnabled =
+      this.configService.get<string>('NATS_ENABLED') === 'true';
     const natsHost = this.configService.get<string>('NATS_HOST');
     const natsPort = this.configService.get<string>('NATS_PORT');
 
@@ -81,7 +87,9 @@ export class NdiService implements OnModuleInit {
         servers: [`${natsHost}:${natsPort}`],
         name: `auth-service-internal-${process.pid}`,
       });
-      this.logger.log('✅ Connected to internal NATS for multi-pod synchronization');
+      this.logger.log(
+        '✅ Connected to internal NATS for multi-pod synchronization',
+      );
 
       // Listen for broadcasts from other pods
       const sc = StringCodec();
@@ -103,14 +111,14 @@ export class NdiService implements OnModuleInit {
 
   private handleInternalBroadcast(data: any) {
     const { threadId, ndiData, loginData, status, error } = data;
-    
+
     this.logger.log(`📢 Received internal broadcast for thread: ${threadId}`);
-    
+
     this.eventEmitter.emit(`ndi.verification.${threadId}`, {
       status,
       cidNo: ndiData?.cidNo,
       loginData,
-      error
+      error,
     });
 
     // Cleanup local context if it exists
@@ -151,8 +159,8 @@ export class NdiService implements OnModuleInit {
 
     try {
       // Handle potential double path if Env var includes the path already
-      const url = authUrl.endsWith('/authenticate') 
-        ? authUrl 
+      const url = authUrl.endsWith('/authenticate')
+        ? authUrl
         : `${authUrl}/authentication/v1/authenticate`;
 
       const response = await fetch(url, {
@@ -172,11 +180,11 @@ export class NdiService implements OnModuleInit {
         throw new Error(`Authentication failed: ${response.status} - ${text}`);
       }
 
-      const data = await response.json() as any;
+      const data = (await response.json()) as any;
       this.accessToken = data.access_token;
       // Expires in seconds (usually 3600), buffer 60s
       this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-      
+
       return this.accessToken as string;
     } catch (err) {
       this.logger.error('Failed to authenticate with NDI', err);
@@ -238,24 +246,30 @@ export class NdiService implements OnModuleInit {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Proof request failed: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Proof request failed: ${response.status} - ${errorText}`,
+        );
       }
 
       const response_data = await response.json();
       const data = (response_data as any).data || response_data;
 
-      const threadId = data.proofRequestThreadId || data.thread_id || data.threadId || data.id;
+      const threadId =
+        data.proofRequestThreadId || data.thread_id || data.threadId || data.id;
 
       this.logger.log(`Extracted ThreadId: ${threadId}`);
-      
+
       if (this.verificationContexts.size >= this.MAX_ENTRIES) {
-          const oldestKey = this.verificationContexts.keys().next().value;
-          if (oldestKey) {
-            this.verificationContexts.delete(oldestKey);
-          }
+        const oldestKey = this.verificationContexts.keys().next().value;
+        if (oldestKey) {
+          this.verificationContexts.delete(oldestKey);
+        }
       }
-      
-      this.verificationContexts.set(threadId, { type: loginType, timestamp: Date.now() });
+
+      this.verificationContexts.set(threadId, {
+        type: loginType,
+        timestamp: Date.now(),
+      });
       void this.listenForNatsResponse(threadId);
 
       return {
@@ -264,8 +278,8 @@ export class NdiService implements OnModuleInit {
         tokenType: this.tokenType,
       };
     } catch (error) {
-       this.logger.error('Failed to create proof request', error);
-       throw error;
+      this.logger.error('Failed to create proof request', error);
+      throw error;
     }
   }
 
@@ -288,34 +302,56 @@ export class NdiService implements OnModuleInit {
       (async () => {
         for await (const msg of subscription) {
           try {
-            const data = JSON.parse(sc.decode(msg.data)).data ?? JSON.parse(sc.decode(msg.data));
-            
-            if (data.type === 'present-proof/presentation-result' || data.type === 'present-proof/rejected') {
+            const data =
+              JSON.parse(sc.decode(msg.data)).data ??
+              JSON.parse(sc.decode(msg.data));
+
+            if (
+              data.type === 'present-proof/presentation-result' ||
+              data.type === 'present-proof/rejected'
+            ) {
               if (data.type === 'present-proof/presentation-result') {
                 const ndiData = this.handleVerificationResult(data);
                 if (ndiData) {
                   const context = this.verificationContexts.get(threadId);
                   const loginType = context?.type || 'CITIZEN';
-                  
+
                   try {
                     const loginData = await this.authService.authenticateViaNDI(
-                       { cidNo: ndiData.cidNo }, 
-                       loginType,
-                       '0.0.0.0', 
-                       'NDI-Background-Verification'
+                      { cidNo: ndiData.cidNo },
+                      loginType,
+                      '0.0.0.0',
+                      'NDI-Background-Verification',
                     );
-                    
-                    const result = { status: 'verified', cidNo: ndiData.cidNo, loginData };
-                    this.eventEmitter.emit(`ndi.verification.${threadId}`, result);
-                    this.broadcastResult({ ...result, threadId, ndiData, loginType });
+
+                    const result = {
+                      status: 'verified',
+                      cidNo: ndiData.cidNo,
+                      loginData,
+                    };
+                    this.eventEmitter.emit(
+                      `ndi.verification.${threadId}`,
+                      result,
+                    );
+                    this.broadcastResult({
+                      ...result,
+                      threadId,
+                      ndiData,
+                      loginType,
+                    });
                   } catch (err: any) {
                     const result = { status: 'failed', error: err.message };
-                    this.eventEmitter.emit(`ndi.verification.${threadId}`, result);
+                    this.eventEmitter.emit(
+                      `ndi.verification.${threadId}`,
+                      result,
+                    );
                     this.broadcastResult({ ...result, threadId, loginType });
                   }
                 }
               } else {
-                this.eventEmitter.emit(`ndi.verification.${threadId}`, { status: 'rejected' });
+                this.eventEmitter.emit(`ndi.verification.${threadId}`, {
+                  status: 'rejected',
+                });
               }
               subscription.unsubscribe();
               await this.closeNatsConnection();
@@ -334,14 +370,18 @@ export class NdiService implements OnModuleInit {
   private broadcastResult(data: any) {
     if (this.internalNats) {
       const sc = StringCodec();
-      this.internalNats.publish(this.INTERNAL_BROADCAST_CHANNEL, sc.encode(JSON.stringify(data)));
+      this.internalNats.publish(
+        this.INTERNAL_BROADCAST_CHANNEL,
+        sc.encode(JSON.stringify(data)),
+      );
     }
     this.verificationContexts.delete(data.threadId);
   }
 
   private handleVerificationResult(data: any): { cidNo: string } | null {
     if (data.verification_result === 'ProofValidated') {
-      const cidNo = data.requested_presentation?.revealed_attrs?.['ID Number']?.[0]?.value;
+      const cidNo =
+        data.requested_presentation?.revealed_attrs?.['ID Number']?.[0]?.value;
       if (cidNo) return { cidNo };
     }
     return null;

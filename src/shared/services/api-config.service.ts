@@ -125,6 +125,23 @@ export class ApiConfigService {
     };
   }
 
+  get emailConfig() {
+    return {
+      host: this.getString('EMAIL_HOST'),
+      port: this.getNumber('EMAIL_PORT'),
+      username: this.getString('EMAIL_USER'),
+      password: this.getString('EMAIL_PASSWORD'),
+      emailFromName: this.getString('EMAIL_FROM_NAME'),
+      emailFrom: this.getString('EMAIL_FROM'),
+    };
+  }
+
+  get otpConfig() {
+    return {
+      expirationMinutes: this.getNumber('FORGOT_PASSWORD_OTP_EXPIRY_MINUTES'),
+    };
+  }
+
   private get(key: string): string {
     const value = this.configService.get<string>(key);
 

@@ -18,7 +18,7 @@ export class UserLoginDto {
  * Internal DTO used after NDI verification completes via NATS
  */
 export class NdiVerifiedLoginDto {
-  @StringField({ minLength: 11, maxLength: 20 })
+  @StringField({ minLength: 1 })
   readonly cidNo!: string;
 
   @StringFieldOptional()

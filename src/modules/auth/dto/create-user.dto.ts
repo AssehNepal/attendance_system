@@ -1,6 +1,5 @@
 import {
   StringField,
-  StringFieldOptional,
 } from '../../../decorators/field.decorators.ts';
 
 export class CreateUserDto {
@@ -9,7 +8,4 @@ export class CreateUserDto {
 
   @StringField({ minLength: 8 })
   password!: string;
-
-  @StringFieldOptional()
-  ndiDeeplink?: string;
 }

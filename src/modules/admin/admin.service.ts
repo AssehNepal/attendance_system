@@ -36,16 +36,9 @@ export class AdminService {
 
   async create(createAdminDto: CreateAdminDto): Promise<Admin> {
     // 1. Validate CID format (400 Bad Request)
-    if (!/^\d{11}$/.test(createAdminDto.cidNo)) {
-      throw new BadRequestException('CID must be exactly 11 digits');
+    if (!/^\d{2,}$/.test(createAdminDto.cidNo)) {
+      throw new BadRequestException('CID must be at least 2 digits');
     }
-
-    // // 2. Validate password length (400 Bad Request)
-    // if (createAdminDto.password.length < 11) {
-    //   throw new BadRequestException(
-    //     'Password must be at least 11 characters long',
-    //   );
-    // }
 
     // 3. Validate mobile number format if provided (400 Bad Request)
     if (

@@ -8,6 +8,7 @@ import { DataSource } from 'typeorm';
 import { addTransactionalDataSource } from 'typeorm-transactional';
 
 import { AuthModule } from './modules/auth/auth.module.ts';
+import { ForgotPasswordModule } from './modules/forgot-password/forgot-password.module';
 import { HealthCheckerModule } from './modules/health-checker/health-checker.module.ts';
 import { UsersModule } from './modules/users/users.module.ts';
 import { AdminModule } from './modules/admin/admin.module.ts';
@@ -24,6 +25,7 @@ import { SharedModule } from './shared/shared.module.ts';
   imports: [
     EventEmitterModule.forRoot(),
     AuthModule,
+    ForgotPasswordModule,
     UsersModule,
     AdminModule,
     RolesModule,

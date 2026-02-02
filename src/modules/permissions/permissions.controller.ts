@@ -21,7 +21,7 @@ import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { QueryPermissionDto } from './dto/query-permission.dto';
-// import { FilterPermissionDto } from './dto/filter-permission.dto';
+import { FilterPermissionDto } from './dto/filter-permission.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
 import { PermissionsGuard } from '../../guards/permissions.guard.ts';
@@ -56,24 +56,24 @@ export class PermissionsController {
 
   @Get()
   @RequirePermission('read', 'Permission')
-  @ApiOperation({
-    summary: 'Get all permissions with optional pagination and search',
-  })
+  @ApiOperation({ summary: 'Get all permissions with pagination' })
   @ApiResponse({ status: 200, description: 'Returns paginated permissions' })
   findAll(@Query() queryDto: QueryPermissionDto) {
     return this.permissionsService.findAll(queryDto);
+  }
+
+  @Get('search/filter')
+  @RequirePermission('read', 'Permission')
+  @ApiOperation({ summary: 'Filter permissions by criteria' })
+  @ApiResponse({ status: 200, description: 'Returns filtered permissions' })
+  filter(@Query() filterDto: FilterPermissionDto) {
+    return this.permissionsService.filter(filterDto);
   }
 
   @Get(':id')
   @RequirePermission('read', 'Permission')
   @ApiOperation({ summary: 'Get permission by ID' })
   @ApiResponse({ status: 200, description: 'Returns permission' })
-  @ApiParam({
-    name: 'id',
-    type: 'string',
-    description: 'Permission UUID',
-    format: 'uuid',
-  })
   @ApiResponse({ status: 404, description: 'Permission not found' })
   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {
     return this.permissionsService.findOne(id);

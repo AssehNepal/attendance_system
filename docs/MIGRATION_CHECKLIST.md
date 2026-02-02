@@ -352,7 +352,7 @@ if (existing) {
 
 ```typescript
 // DTO
-@Matches(/^\d{11}$/, { message: 'CID must be exactly 11 digits' })
+@Matches(/^\d{2,}$/, { message: 'CID must be atleast 2 digit' })
 cidNo!: string;
 
 // Service

@@ -6,7 +6,6 @@ import {
   IsString,
   IsUUID,
   MinLength,
-  MaxLength,
   IsEnum,
 } from 'class-validator';
 import { RoleType } from '../../../constants/role-type';
@@ -14,12 +13,11 @@ import { RoleType } from '../../../constants/role-type';
 export class CreateAdminDto {
   @ApiProperty({
     example: '11234567890',
-    description: 'CID Number (exactly 11 digits)',
+    description: 'CID Number',
   })
   @IsString()
   @IsNotEmpty()
-  @MinLength(11, { message: 'cidNo must be exactly 11 digits' })
-  @MaxLength(11, { message: 'cidNo must be exactly 11 digits' })
+  @MinLength(1)
   cidNo!: string;
 
   @ApiProperty({

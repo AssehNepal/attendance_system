@@ -35,10 +35,22 @@ export class Admin extends AbstractEntity {
   @JoinColumn({ name: 'agency_id' })
   agency?: Agency;
 
-  @Column({ type: 'varchar', length: 20, nullable: true, name: 'mobile_no' })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    unique: true,
+    name: 'mobile_no',
+  })
   mobileNo?: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, name: 'email' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    unique: true,
+    name: 'email',
+  })
   email?: string;
 
   @OneToMany('AdminRole', 'admin', { cascade: true })
