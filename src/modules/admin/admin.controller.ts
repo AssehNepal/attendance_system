@@ -21,7 +21,7 @@ import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { QueryAdminDto } from './dto/query-admin.dto';
-import { FilterAdminDto } from './dto/filter-admin.dto';
+import { FilterAdminDto } from './dto/filter-admin.dto.ts';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';

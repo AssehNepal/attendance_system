@@ -101,6 +101,14 @@ export class AgencyService {
     return new PageDto(entities, pageMetaDto);
   }
 
+  async findAllWithoutPagination(): Promise<Agency[]> {
+    return this.agencyRepository.find({
+      order: {
+        name: 'ASC',
+      },
+    });
+  }
+
   async findOne(id: Uuid): Promise<Agency> {
     const agency = await this.agencyRepository.findOne({
       where: { id },

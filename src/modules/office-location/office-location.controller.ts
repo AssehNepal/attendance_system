@@ -68,6 +68,19 @@ export class OfficeLocationController {
     return this.officeLocationService.findAll(queryDto);
   }
 
+  @Get('all')
+  @RequirePermission('read', 'OfficeLocation')
+  @ApiOperation({
+    summary: 'Get ALL office locations without pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all office locations',
+  })
+  findAllWithoutPagination() {
+    return this.officeLocationService.findAllWithoutPagination();
+  }
+
   //   @Get('search/filter')
   //   @RequirePermission('read', 'OfficeLocation')
   //   @ApiOperation({ summary: 'Filter office locations by criteria' })

@@ -156,6 +156,14 @@ export class OfficeLocationService {
     return new PageDto(entities, pageMetaDto);
   }
 
+  async findAllWithoutPagination(): Promise<OfficeLocation[]> {
+    return this.officeLocationRepository.find({
+      order: {
+        name: 'ASC',
+      },
+    });
+  }
+
   async findOne(id: Uuid): Promise<OfficeLocation> {
     const officeLocation = await this.officeLocationRepository.findOne({
       where: { id },

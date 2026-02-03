@@ -160,4 +160,17 @@ export class AdminRoleController {
   findAll(@Query() queryDto: QueryAdminRoleDto) {
     return this.adminRoleService.findAll(queryDto);
   }
+
+  @Get('all')
+  @RequirePermission('read', 'AdminRole')
+  @ApiOperation({
+    summary: 'Get ALL admin-role assignments without pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all admin-role assignments',
+  })
+  findAllWithoutPagination() {
+    return this.adminRoleService.findAllWithoutPagination();
+  }
 }

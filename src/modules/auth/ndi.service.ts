@@ -324,6 +324,20 @@ export class NdiService implements OnModuleInit {
                       'NDI-Background-Verification',
                     );
 
+                    this.logger.log(`✅ [NDI Login Response] Complete login data for CID ${ndiData.cidNo}:`, {
+                      message: loginData.message,
+                      accessToken: loginData.accessToken ? `${loginData.accessToken ?? 'N/A'}` : 'N/A',
+                      refreshToken: loginData.refreshToken ? `${loginData.refreshToken ?? 'N/A'}` : 'N/A',
+                      expiresIn: loginData.expiresIn,
+                      user: loginData.user ? {
+                        id: loginData.user.id,
+                        cidNo: loginData.user.cidNo,
+                        roleType: loginData.user.roleType,
+                        roles: loginData.user.roles,
+                      } : 'N/A',
+                      ability: loginData.ability ? `${loginData.ability.length} abilities granted` : 'No abilities',
+                    });
+
                     const result = {
                       status: 'verified',
                       cidNo: ndiData.cidNo,

@@ -19,7 +19,7 @@ export class PageOptionsDto {
 
   @NumberFieldOptional({
     minimum: 1,
-    maximum: 50,
+    maximum: 500, // Increased from 50 to allow larger page sizes
     int: true,
   })
   readonly take?: number;

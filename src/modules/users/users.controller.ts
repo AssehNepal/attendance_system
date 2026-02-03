@@ -44,6 +44,15 @@ export class UsersController {
     return this.usersService.findAll(queryDto);
   }
 
+  @Get('all')
+  @ApiOperation({
+    summary: 'Get ALL users without pagination',
+  })
+  @ApiResponse({ status: 200, description: 'Returns all users' })
+  findAllWithoutPagination() {
+    return this.usersService.findAllWithoutPagination();
+  }
+
   @Get(':id')
   @ApiParam({
     name: 'id',

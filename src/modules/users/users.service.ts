@@ -90,6 +90,14 @@ export class UsersService {
     return new PageDto(entities, pageMetaDto);
   }
 
+  async findAllWithoutPagination(): Promise<User[]> {
+    return this.userRepository.find({
+      order: {
+        cidNo: 'ASC',
+      },
+    });
+  }
+
   async findOne(id: Uuid): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
 

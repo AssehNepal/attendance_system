@@ -44,6 +44,13 @@ export class AgencyController {
     return this.agencyService.findAll(queryDto);
   }
 
+  @Get('all')
+  @ApiOperation({ summary: 'Get ALL agencies without pagination' })
+  @ApiResponse({ status: 200, description: 'Returns all agencies' })
+  findAllWithoutPagination() {
+    return this.agencyService.findAllWithoutPagination();
+  }
+
   @Get('search/filter')
   @ApiOperation({ summary: 'Filter agencies by criteria' })
   @ApiResponse({ status: 200, description: 'Returns filtered agencies' })

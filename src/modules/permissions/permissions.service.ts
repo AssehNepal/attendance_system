@@ -102,6 +102,14 @@ export class PermissionsService {
     return new PageDto(entities, pageMetaDto);
   }
 
+  async findAllWithoutPagination(): Promise<Permission[]> {
+    return this.permissionRepository.find({
+      order: {
+        name: 'ASC',
+      },
+    });
+  }
+
   async findOne(id: Uuid): Promise<Permission> {
     const permission = await this.permissionRepository.findOne({
       where: { id },

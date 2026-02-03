@@ -177,4 +177,13 @@ export class AdminRoleService {
 
     return new PageDto(entities, pageMetaDto);
   }
+
+  async findAllWithoutPagination(): Promise<AdminRole[]> {
+    return this.adminRoleRepository.find({
+      relations: ['admin', 'role'],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
 }

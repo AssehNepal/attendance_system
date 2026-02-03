@@ -62,6 +62,19 @@ export class RolePermissionController {
     return this.rolePermissionService.findAll(queryDto);
   }
 
+  @Get('all')
+  @RequirePermission('read', 'RolePermission')
+  @ApiOperation({
+    summary: 'Get ALL role-permission assignments without pagination',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all role-permission assignments',
+  })
+  findAllWithoutPagination() {
+    return this.rolePermissionService.findAllWithoutPagination();
+  }
+
   //   @Get('search/filter')
   //   @RequirePermission('read', 'RolePermission')
   //   @ApiOperation({ summary: 'Filter role-permission assignments by criteria' })

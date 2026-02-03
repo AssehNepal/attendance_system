@@ -62,6 +62,14 @@ export class PermissionsController {
     return this.permissionsService.findAll(queryDto);
   }
 
+  @Get('all')
+  @RequirePermission('read', 'Permission')
+  @ApiOperation({ summary: 'Get ALL permissions without pagination' })
+  @ApiResponse({ status: 200, description: 'Returns all permissions' })
+  findAllWithoutPagination() {
+    return this.permissionsService.findAllWithoutPagination();
+  }
+
   @Get('search/filter')
   @RequirePermission('read', 'Permission')
   @ApiOperation({ summary: 'Filter permissions by criteria' })

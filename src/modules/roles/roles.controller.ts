@@ -62,6 +62,16 @@ export class RolesController {
     return this.rolesService.findAll(queryDto);
   }
 
+  @Get('all')
+  @RequirePermission('read', 'Role')
+  @ApiOperation({
+    summary: 'Get ALL roles without pagination',
+  })
+  @ApiResponse({ status: 200, description: 'Returns all roles' })
+  findAllWithoutPagination() {
+    return this.rolesService.findAllWithoutPagination();
+  }
+
   @Get(':id')
   @RequirePermission('read', 'Role')
   @ApiOperation({ summary: 'Get role by ID with permissions' })

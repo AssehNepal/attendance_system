@@ -83,6 +83,15 @@ export class RolesService {
     return new PageDto(entities, pageMetaDto);
   }
 
+  async findAllWithoutPagination(): Promise<Role[]> {
+    return this.roleRepository.find({
+      relations: ['rolePermissions', 'rolePermissions.permission'],
+      order: {
+        name: 'ASC',
+      },
+    });
+  }
+
   async findOne(id: Uuid): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id },
