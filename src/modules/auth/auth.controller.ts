@@ -94,7 +94,8 @@ export class AuthController {
   @PublicRoute()
   @ApiOperation({
     summary: 'Admin NDI Login',
-    description: 'Initiates NDI verification flow for administrators. Only existing admins can log in.',
+    description:
+      'Initiates NDI verification flow for administrators. Only existing admins can log in.',
   })
   async createAdminNdiProofRequest(
     @Body() createProofRequestDto: CreateProofRequestDto,
@@ -203,16 +204,31 @@ export class AuthController {
     response.flushHeaders();
 
     const eventName = `ndi.verification.${threadId}`;
-    console.log(`🔌 [streamNdiStatus] Client connected to SSE stream for thread: ${threadId}`);
-    
+    console.log(
+      `🔌 [streamNdiStatus] Client connected to SSE stream for thread: ${threadId}`,
+    );
+    console.log(`🔌 [streamNdiStatus] Listening for event: ${eventName}`);
+
     const listener = (payload: any) => {
-      response.write(`data: ${JSON.stringify(payload)}\n\n`);
+      console.log(
+        `📨 [streamNdiStatus] Event received for ${threadId}:`,
+        payload,
+      );
+      try {
+        response.write(`data: ${JSON.stringify(payload)}\n\n`);
+        console.log(`✅ [streamNdiStatus] Data written to response`);
+      } catch (error) {
+        console.error(`❌ [streamNdiStatus] Error writing to response:`, error);
+      }
 
       if (
-        payload.status === 'verified' || 
-        payload.status === 'failed' || 
+        payload.status === 'verified' ||
+        payload.status === 'failed' ||
         payload.status === 'rejected'
       ) {
+        console.log(
+          `🔚 [streamNdiStatus] Ending connection for status: ${payload.status}`,
+        );
         response.end();
       }
     };

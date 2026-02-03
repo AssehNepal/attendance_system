@@ -112,14 +112,29 @@ export class NdiService implements OnModuleInit {
   private handleInternalBroadcast(data: any) {
     const { threadId, ndiData, loginData, status, error } = data;
 
-    this.logger.log(`📢 Received internal broadcast for thread: ${threadId}`);
+    this.logger.log(
+      `📢 Received internal broadcast for thread: ${threadId}, status: ${status}`,
+    );
+    console.log(`📢 [Internal Broadcast] Full data:`, {
+      threadId,
+      status,
+      hasLoginData: !!loginData,
+      hasNdiData: !!ndiData,
+      error,
+    });
 
-    this.eventEmitter.emit(`ndi.verification.${threadId}`, {
+    const payload = {
       status,
       cidNo: ndiData?.cidNo,
       loginData,
       error,
-    });
+    };
+
+    console.log(
+      `📢 [Internal Broadcast] Emitting event: ndi.verification.${threadId}`,
+    );
+    this.eventEmitter.emit(`ndi.verification.${threadId}`, payload);
+    console.log(`✅ [Internal Broadcast] Event emitted for thread ${threadId}`);
 
     // Cleanup local context if it exists
     this.verificationContexts.delete(threadId);
@@ -343,9 +358,23 @@ export class NdiService implements OnModuleInit {
                       cidNo: ndiData.cidNo,
                       loginData,
                     };
+                    console.log(
+                      `📢 [NDI Service] Emitting verification event for thread ${threadId}:`,
+                      {
+                        status: result.status,
+                        cidNo: result.cidNo,
+                        hasLoginData: !!result.loginData,
+                        loginDataKeys: result.loginData
+                          ? Object.keys(result.loginData)
+                          : [],
+                      },
+                    );
                     this.eventEmitter.emit(
                       `ndi.verification.${threadId}`,
                       result,
+                    );
+                    console.log(
+                      `✅ [NDI Service] Event emitted for thread ${threadId}`,
                     );
                     this.broadcastResult({
                       ...result,
