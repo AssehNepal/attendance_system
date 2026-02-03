@@ -14,6 +14,7 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { QueryAdminDto } from './dto/query-admin.dto';
 import { FilterAdminDto } from './dto/filter-admin.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { OfficeLocation } from '../office-location/entities/office-location.entity';
@@ -315,5 +316,39 @@ export class AdminService {
       where: { cidNo },
       relations: ['adminRoles', 'adminRoles.role'],
     });
+  }
+
+  async changePassword(
+    id: Uuid,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<{ statusCode: number; message: string }> {
+    const admin = await this.adminRepository.findOne({
+      where: { id },
+    });
+
+    if (!admin) {
+      throw new NotFoundException(`Admin with ID "${id}" not found`);
+    }
+
+    // Verify old password
+    const isPasswordValid = await bcrypt.compare(
+      changePasswordDto.oldPassword,
+      admin.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('Invalid current password');
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      BCRYPT_ROUNDS,
+    );
+
+    admin.password = hashedNewPassword;
+    await this.adminRepository.save(admin);
+
+    return { statusCode: 200, message: 'Password updated successfully' };
   }
 }

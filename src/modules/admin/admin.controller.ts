@@ -23,6 +23,7 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { QueryAdminDto } from './dto/query-admin.dto';
 import { FilterAdminDto } from './dto/filter-admin.dto.ts';
 import { AssignRoleDto } from './dto/assign-role.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthGuard } from '../../guards/auth.guard.ts';
 import { RolesGuard } from '../../guards/roles.guard.ts';
 import { PermissionsGuard } from '../../guards/permissions.guard.ts';
@@ -77,19 +78,25 @@ export class AdminController {
     return this.adminService.getAllAdmins();
   }
 
-  @Get('search/filter')
-  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('read', 'Admin')
-  @ApiOperation({ summary: 'Filter admins by criteria' })
-  @ApiResponse({ status: 200, description: 'Returns filtered admins' })
-  filter(@Query() filterDto: FilterAdminDto) {
-    return this.adminService.filter(filterDto);
-  }
+  // @Get('search/filter')
+  // @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  // @RequirePermission('read', 'Admin')
+  // @ApiOperation({ summary: 'Filter admins by criteria' })
+  // @ApiResponse({ status: 200, description: 'Returns filtered admins' })
+  // filter(@Query() filterDto: FilterAdminDto) {
+  //   return this.adminService.filter(filterDto);
+  // }
 
   @Get(':id')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('read', 'Admin')
   @ApiOperation({ summary: 'Get admin by ID' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Admin UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 200, description: 'Returns admin' })
   @ApiResponse({ status: 404, description: 'Admin not found' })
   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {
@@ -136,6 +143,12 @@ export class AdminController {
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
   @RequirePermission('update', 'Admin')
   @ApiOperation({ summary: 'Assign role to admin' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Admin UUID',
+    format: 'uuid',
+  })
   @ApiResponse({ status: 201, description: 'Role assigned successfully' })
   @ApiResponse({ status: 409, description: 'Role already assigned' })
   assignRole(
@@ -143,6 +156,26 @@ export class AdminController {
     @Body() assignRoleDto: AssignRoleDto,
   ) {
     return this.adminService.assignRole(id, assignRoleDto);
+  }
+
+  @Post(':id/change-password')
+  @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
+  @RequirePermission('update', 'Admin')
+  @ApiOperation({ summary: 'Change admin password' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    description: 'Admin UUID',
+    format: 'uuid',
+  })
+  @ApiResponse({ status: 200, description: 'Password updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid current password' })
+  @ApiResponse({ status: 404, description: 'Admin not found' })
+  changePassword(
+    @Param('id', ParseUUIDPipe) id: Uuid,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.adminService.changePassword(id, changePasswordDto);
   }
 
   @Delete(':adminId/remove-role/:roleId')
