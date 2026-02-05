@@ -149,6 +149,17 @@ async function createSuperAdmin() {
       }
     }
 
+    // Get Full Name
+    let fullName = '';
+    while (!fullName.trim()) {
+      fullName = await question(
+        `${colors.blue}Enter Full Name: ${colors.reset}`,
+      );
+      if (!fullName.trim()) {
+        console.log(`${colors.red}❌ Full Name is required!${colors.reset}\n`);
+      }
+    }
+
     // Check if CID already exists
     const existingCID = await dataSource.query(
       `SELECT id FROM admin WHERE cid_no = $1`,
@@ -268,7 +279,8 @@ async function createSuperAdmin() {
     // Insert SUPER_ADMIN into database
     const result = await dataSource.query(
       `INSERT INTO admin (
-        cid_no, 
+        cid_no,
+        full_name,
         role_type, 
         password, 
         office_location_id, 
@@ -277,10 +289,11 @@ async function createSuperAdmin() {
         mobile_no,
         created_at,
         updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-      RETURNING id, cid_no, role_type, created_at`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      RETURNING id, cid_no, full_name, role_type, created_at`,
       [
         cidNo,
+        fullName,
         'SUPER_ADMIN',
         hashedPassword,
         officeLocationId,
@@ -314,6 +327,9 @@ async function createSuperAdmin() {
     console.log(`   ID: ${colors.yellow}${createdAdmin.id}${colors.reset}`);
     console.log(
       `   CID: ${colors.yellow}${createdAdmin.cid_no}${colors.reset}`,
+    );
+    console.log(
+      `   Full Name: ${colors.yellow}${createdAdmin.full_name}${colors.reset}`,
     );
     console.log(
       `   Role Type: ${colors.yellow}${createdAdmin.role_type}${colors.reset}`,

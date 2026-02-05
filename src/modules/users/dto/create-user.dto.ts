@@ -10,6 +10,14 @@ export class CreateUserDto {
   @IsNotEmpty()
   cidNo!: string;
 
+  @ApiProperty({
+    example: 'Tshering Dorji',
+    description: 'Full Name',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fullName!: string;
+
   @ApiPropertyOptional({
     example: 'Password@123',
     description: 'User password',

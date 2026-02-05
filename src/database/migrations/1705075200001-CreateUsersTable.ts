@@ -11,6 +11,7 @@ export class CreateUsersTable1705075200001 implements MigrationInterface {
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         "role_type" character varying(20) NOT NULL DEFAULT 'CITIZEN',
         "cid_no" character varying(20) UNIQUE NOT NULL,
+        "full_name" character varying(100) NOT NULL,
         "password" character varying,
         CONSTRAINT "PK_users" PRIMARY KEY ("id")
       )

@@ -45,6 +45,7 @@ export interface LoginResponse {
   user: {
     id: string;
     cidNo: string;
+    fullName: string;
     roleType: string;
     roles?: string[];
   };
@@ -111,7 +112,7 @@ export class AuthService {
    * Handles both Citizen (auto-create) and Admin (table check) logins
    */
   async authenticateViaNDI(
-    ndiData: { cidNo: string },
+    ndiData: { cidNo: string; fullName?: string },
     userType: 'ADMIN' | 'CITIZEN',
     ipAddress?: string,
     userAgent?: string,
@@ -119,6 +120,10 @@ export class AuthService {
     console.log(
       `🔍 [authenticateViaNDI] Processing ${userType} login for CID:`,
       ndiData.cidNo,
+    );
+    console.log(
+      '🔍 [authenticateViaNDI] Received NDI data:',
+      JSON.stringify(ndiData, null, 2),
     );
 
     if (userType === 'CITIZEN') {
@@ -128,10 +133,43 @@ export class AuthService {
       let user = await this.usersService.findByCidNo(ndiData.cidNo);
 
       if (!user) {
-        user = await this.usersService.create({ cidNo: ndiData.cidNo });
-        console.log('✅ [authenticateViaNDI] Created new citizen user');
+        console.log('🔍 [authenticateViaNDI] Creating new user with data:', {
+          cidNo: ndiData.cidNo,
+          fullName: ndiData.fullName || 'Unknown User',
+        });
+        user = await this.usersService.create({
+          cidNo: ndiData.cidNo,
+          fullName: ndiData.fullName || 'Unknown User',
+        });
+        console.log(
+          '✅ [authenticateViaNDI] Created new citizen user:',
+          JSON.stringify(user, null, 2),
+        );
       } else {
-        console.log('✅ [authenticateViaNDI] Found existing citizen user');
+        console.log(
+          '✅ [authenticateViaNDI] Found existing citizen user:',
+          JSON.stringify(user, null, 2),
+        );
+
+        // Update fullName if it's missing or if NDI provides a new one
+        if (
+          ndiData.fullName &&
+          (!user.fullName || user.fullName === 'Unknown User')
+        ) {
+          console.log(
+            '🔍 [authenticateViaNDI] Updating user fullName from:',
+            user.fullName,
+            'to:',
+            ndiData.fullName,
+          );
+          user = await this.usersService.update(user.id, {
+            fullName: ndiData.fullName,
+          });
+          console.log(
+            '✅ [authenticateViaNDI] Updated user fullName from NDI:',
+            JSON.stringify(user, null, 2),
+          );
+        }
       }
 
       const accessToken = await this.generateAccessToken({
@@ -158,6 +196,7 @@ export class AuthService {
         user: {
           id: user.id,
           cidNo: user.cidNo,
+          fullName: user.fullName || 'Unknown User',
           roleType: user.roleType,
         },
       };
@@ -213,6 +252,7 @@ export class AuthService {
           user: {
             id: admin.id,
             cidNo: admin.cidNo,
+            fullName: admin.fullName || 'Unknown Admin',
             roleType: admin.roleType,
             roles: [],
           },
@@ -259,6 +299,7 @@ export class AuthService {
         user: {
           id: admin.id,
           cidNo: admin.cidNo,
+          fullName: admin.fullName || 'Unknown Admin',
           roleType: admin.roleType,
           roles,
         },
@@ -341,6 +382,7 @@ export class AuthService {
         user: {
           id: admin.id,
           cidNo: admin.cidNo,
+          fullName: admin.fullName || 'Unknown Admin',
           roleType: admin.roleType,
           roles: [],
         },
@@ -396,6 +438,7 @@ export class AuthService {
       user: {
         id: admin.id,
         cidNo: admin.cidNo,
+        fullName: admin.fullName || 'Unknown Admin',
         roleType: admin.roleType,
         roles,
       },

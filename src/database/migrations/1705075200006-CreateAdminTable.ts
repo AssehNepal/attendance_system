@@ -10,6 +10,7 @@ export class CreateAdminTable1705075200006 implements MigrationInterface {
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         "cid_no" character varying(20) NOT NULL,
+        "full_name" character varying(100) NOT NULL,
         "role_type" character varying(20) NOT NULL DEFAULT 'ADMIN',
         "password" character varying(255) NOT NULL,
         "office_location_id" uuid,

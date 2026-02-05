@@ -15,6 +15,9 @@ export class User extends AbstractEntity {
   @Column({ type: 'varchar', length: 20, unique: true, name: 'cid_no' })
   cidNo!: string;
 
+  @Column({ type: 'varchar', length: 100, name: 'full_name' })
+  fullName!: string;
+
   @Column({ type: 'varchar', nullable: true, name: 'password' })
   @Exclude({ toPlainOnly: true })
   password?: string;

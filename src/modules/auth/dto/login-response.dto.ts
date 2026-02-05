@@ -8,6 +8,9 @@ class UserInfo {
   cidNo!: string;
 
   @ApiProperty()
+  fullName!: string;
+
+  @ApiProperty()
   roleType!: string;
 
   @ApiProperty({ type: [String] })

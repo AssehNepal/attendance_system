@@ -333,25 +333,37 @@ export class NdiService implements OnModuleInit {
 
                   try {
                     const loginData = await this.authService.authenticateViaNDI(
-                      { cidNo: ndiData.cidNo },
+                      { cidNo: ndiData.cidNo, fullName: ndiData.fullName },
                       loginType,
                       '0.0.0.0',
                       'NDI-Background-Verification',
                     );
 
-                    this.logger.log(`✅ [NDI Login Response] Complete login data for CID ${ndiData.cidNo}:`, {
-                      message: loginData.message,
-                      accessToken: loginData.accessToken ? `${loginData.accessToken ?? 'N/A'}` : 'N/A',
-                      refreshToken: loginData.refreshToken ? `${loginData.refreshToken ?? 'N/A'}` : 'N/A',
-                      expiresIn: loginData.expiresIn,
-                      user: loginData.user ? {
-                        id: loginData.user.id,
-                        cidNo: loginData.user.cidNo,
-                        roleType: loginData.user.roleType,
-                        roles: loginData.user.roles,
-                      } : 'N/A',
-                      ability: loginData.ability ? `${loginData.ability.length} abilities granted` : 'No abilities',
-                    });
+                    this.logger.log(
+                      `✅ [NDI Login Response] Complete login data for CID ${ndiData.cidNo}:`,
+                      {
+                        message: loginData.message,
+                        accessToken: loginData.accessToken
+                          ? `${loginData.accessToken ?? 'N/A'}`
+                          : 'N/A',
+                        refreshToken: loginData.refreshToken
+                          ? `${loginData.refreshToken ?? 'N/A'}`
+                          : 'N/A',
+                        expiresIn: loginData.expiresIn,
+                        user: loginData.user
+                          ? {
+                              id: loginData.user.id,
+                              cidNo: loginData.user.cidNo,
+                              fullName: loginData.user.fullName,
+                              roleType: loginData.user.roleType,
+                              roles: loginData.user.roles,
+                            }
+                          : 'N/A',
+                        ability: loginData.ability
+                          ? `${loginData.ability.length} abilities granted`
+                          : 'No abilities',
+                      },
+                    );
 
                     const result = {
                       status: 'verified',
@@ -421,11 +433,32 @@ export class NdiService implements OnModuleInit {
     this.verificationContexts.delete(data.threadId);
   }
 
-  private handleVerificationResult(data: any): { cidNo: string } | null {
+  private handleVerificationResult(
+    data: any,
+  ): { cidNo: string; fullName?: string } | null {
     if (data.verification_result === 'ProofValidated') {
+      // Log the entire data structure for debugging
+      this.logger.log(
+        '🔍 [NDI Raw Data] Full verification data:',
+        JSON.stringify(data, null, 2),
+      );
+
+      // Log the revealed attributes specifically
+      this.logger.log(
+        '🔍 [NDI Revealed Attrs]:',
+        JSON.stringify(data.requested_presentation?.revealed_attrs, null, 2),
+      );
+
       const cidNo =
         data.requested_presentation?.revealed_attrs?.['ID Number']?.[0]?.value;
-      if (cidNo) return { cidNo };
+      const fullName =
+        data.requested_presentation?.revealed_attrs?.['Full Name']?.[0]?.value;
+
+      this.logger.log(
+        `🔍 [NDI Extracted] CID: ${cidNo}, Full Name: ${fullName}`,
+      );
+
+      if (cidNo) return { cidNo, fullName };
     }
     return null;
   }

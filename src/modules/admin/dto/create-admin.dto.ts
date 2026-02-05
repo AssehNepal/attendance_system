@@ -21,6 +21,14 @@ export class CreateAdminDto {
   cidNo!: string;
 
   @ApiProperty({
+    example: 'Tshering Dorji',
+    description: 'Full Name',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fullName!: string;
+
+  @ApiProperty({
     enum: RoleType,
     enumName: 'RoleType',
     example: RoleType.ADMIN,
