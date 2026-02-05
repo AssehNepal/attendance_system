@@ -30,6 +30,7 @@ const BCRYPT_ROUNDS = 12;
 interface JwtPayload {
   userId: Uuid;
   cidNo: string;
+  fullName?: string;
   roleType: 'CITIZEN' | 'ADMIN' | 'SUPER_ADMIN';
   type: TokenType;
   roles?: string[];
@@ -175,6 +176,7 @@ export class AuthService {
       const accessToken = await this.generateAccessToken({
         userId: user.id,
         cidNo: user.cidNo,
+        fullName: user.fullName,
         roleType: 'CITIZEN',
         type: TokenType.ACCESS_TOKEN,
       });
@@ -228,6 +230,7 @@ export class AuthService {
         const accessToken = await this.generateAccessToken({
           userId: admin.id,
           cidNo: admin.cidNo,
+          fullName: admin.fullName,
           roleType: 'SUPER_ADMIN',
           type: TokenType.ACCESS_TOKEN,
           roles: [],
@@ -275,6 +278,7 @@ export class AuthService {
       const accessToken = await this.generateAccessToken({
         userId: admin.id,
         cidNo: admin.cidNo,
+        fullName: admin.fullName,
         roleType: 'ADMIN',
         type: TokenType.ACCESS_TOKEN,
         roles,
@@ -411,6 +415,7 @@ export class AuthService {
     const accessToken = await this.generateAccessToken({
       userId: admin.id,
       cidNo: admin.cidNo,
+      fullName: admin.fullName,
       roleType: 'ADMIN',
       type: TokenType.ACCESS_TOKEN,
       roles,
@@ -835,6 +840,7 @@ export class AuthService {
       accessTokenPayload = {
         userId: user.id,
         cidNo: user.cidNo,
+        fullName: user.fullName,
         roleType: 'CITIZEN',
         type: TokenType.ACCESS_TOKEN,
       };
@@ -860,6 +866,7 @@ export class AuthService {
         accessTokenPayload = {
           userId: admin.id,
           cidNo: admin.cidNo,
+          fullName: admin.fullName,
           roleType: 'SUPER_ADMIN',
           type: TokenType.ACCESS_TOKEN,
           roles: [],
@@ -874,6 +881,7 @@ export class AuthService {
         accessTokenPayload = {
           userId: admin.id,
           cidNo: admin.cidNo,
+          fullName: admin.fullName,
           roleType: 'ADMIN',
           type: TokenType.ACCESS_TOKEN,
           roles,

@@ -11,7 +11,8 @@ export class CreatePermissionDto {
   name!: string;
 
   @ApiPropertyOptional({
-    example: ['sample of the description'],
+    example:
+      'Birth and death registration verification permission for Gewog CC',
     description: 'Permission description',
   })
   @IsString()
