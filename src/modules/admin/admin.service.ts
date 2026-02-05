@@ -135,6 +135,17 @@ export class AdminService {
       .leftJoinAndSelect('admin.adminRoles', 'adminRoles')
       .leftJoinAndSelect('adminRoles.role', 'role');
 
+    // General search across multiple fields using 'q' parameter
+    if (queryDto.q) {
+      queryBuilder.andWhere(
+        '(admin.cid_no ILIKE :search OR admin.full_name ILIKE :search OR admin.email ILIKE :search)',
+        {
+          search: `%${queryDto.q}%`,
+        },
+      );
+    }
+
+    // Specific CID search (takes precedence if both q and cidNo are provided)
     if (queryDto.cidNo) {
       queryBuilder.andWhere('admin.cid_no ILIKE :cidNo', {
         cidNo: `%${queryDto.cidNo}%`,
