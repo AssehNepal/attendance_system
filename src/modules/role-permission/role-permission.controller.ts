@@ -75,54 +75,6 @@ export class RolePermissionController {
     return this.rolePermissionService.findAllWithoutPagination();
   }
 
-  //   @Get('search/filter')
-  //   @RequirePermission('read', 'RolePermission')
-  //   @ApiOperation({ summary: 'Filter role-permission assignments by criteria' })
-  //   @ApiResponse({
-  //     status: 200,
-  //     description: 'Returns filtered role-permission assignments',
-  //   })
-  //   filter(@Query() filterDto: FilterRolePermissionDto) {
-  //     return this.rolePermissionService.filter(filterDto);
-  //   }
-
-  //   @Get('role/:roleId')
-  //   @RequirePermission('read', 'RolePermission')
-  //   @ApiOperation({ summary: 'Get all permissions assigned to a specific role' })
-  //   @ApiResponse({
-  //     status: 200,
-  //     description: 'Returns all permissions for the role',
-  //   })
-  //   findByRoleId(@Param('roleId', ParseUUIDPipe) roleId: Uuid) {
-  //     return this.rolePermissionService.findByRoleId(roleId);
-  //   }
-
-  //   @Get('permission/:permissionId')
-  //   @RequirePermission('read', 'RolePermission')
-  //   @ApiOperation({ summary: 'Get all roles assigned to a specific permission' })
-  //   @ApiResponse({
-  //     status: 200,
-  //     description: 'Returns all roles with the permission',
-  //   })
-  //   findByPermissionId(@Param('permissionId', ParseUUIDPipe) permissionId: Uuid) {
-  //     return this.rolePermissionService.findByPermissionId(permissionId);
-  //   }
-
-  //   @Get(':id')
-  //   @RequirePermission('read', 'RolePermission')
-  //   @ApiOperation({ summary: 'Get role-permission assignment by ID' })
-  //   @ApiResponse({
-  //     status: 200,
-  //     description: 'Returns role-permission assignment',
-  //   })
-  //   @ApiResponse({
-  //     status: 404,
-  //     description: 'Role-permission assignment not found',
-  //   })
-  //   findOne(@Param('id', ParseUUIDPipe) id: Uuid) {
-  //     return this.rolePermissionService.findOne(id);
-  //   }
-
   @Patch(':id')
   @RequirePermission('update', 'RolePermission')
   @ApiParam({
