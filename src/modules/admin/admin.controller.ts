@@ -40,7 +40,7 @@ export class AdminController {
 
   @Post()
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('create', 'Admin')
+  @RequirePermission('create', 'User')
   @ApiOperation({ summary: 'Create a new admin (super admin only)' })
   @ApiResponse({ status: 201, description: 'Admin created successfully' })
   @ApiResponse({
@@ -62,7 +62,7 @@ export class AdminController {
 
   @Get()
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('read', 'Admin')
+  @RequirePermission('read', 'User')
   @ApiOperation({ summary: 'Get all admins with pagination' })
   @ApiResponse({ status: 200, description: 'Returns paginated admins' })
   findAll(@Query() queryDto: QueryAdminDto) {
@@ -71,7 +71,7 @@ export class AdminController {
 
   @Get('all/list')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('read', 'Admin')
+  @RequirePermission('read', 'User')
   @ApiOperation({ summary: 'Get all admins without filters or pagination' })
   @ApiResponse({ status: 200, description: 'Returns all admins' })
   getAllAdmins() {
@@ -89,7 +89,7 @@ export class AdminController {
 
   @Get(':id')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('read', 'Admin')
+  @RequirePermission('read', 'User')
   @ApiOperation({ summary: 'Get admin by ID' })
   @ApiParam({
     name: 'id',
@@ -105,7 +105,7 @@ export class AdminController {
 
   @Patch(':id')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('update', 'Admin')
+  @RequirePermission('update', 'User')
   @ApiOperation({ summary: 'Update admin by ID' })
   @ApiParam({
     name: 'id',
@@ -125,7 +125,7 @@ export class AdminController {
 
   @Delete(':id')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('delete', 'Admin')
+  @RequirePermission('delete', 'User')
   @ApiOperation({ summary: 'Delete admin by ID' })
   @ApiParam({
     name: 'id',
@@ -141,7 +141,7 @@ export class AdminController {
 
   @Post(':id/assign-role')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('update', 'Admin')
+  @RequirePermission('update', 'User')
   @ApiOperation({ summary: 'Assign role to admin' })
   @ApiParam({
     name: 'id',
@@ -160,7 +160,7 @@ export class AdminController {
 
   @Post(':id/change-password')
   @Roles([RoleType.SUPER_ADMIN, RoleType.ADMIN])
-  @RequirePermission('update', 'Admin')
+  @RequirePermission('update', 'User')
   @ApiOperation({ summary: 'Change admin password' })
   @ApiParam({
     name: 'id',
