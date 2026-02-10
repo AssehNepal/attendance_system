@@ -193,7 +193,7 @@ export class AdminService {
   async findOne(id: Uuid): Promise<Admin> {
     const admin = await this.adminRepository.findOne({
       where: { id },
-      relations: ['officeLocation', 'adminRoles', 'adminRoles.role'],
+      relations: ['officeLocation', 'agency', 'adminRoles', 'adminRoles.role'],
     });
 
     if (!admin) {

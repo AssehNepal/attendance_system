@@ -59,13 +59,19 @@ export class AdminRoleController {
   //     return this.adminRoleService.filter(filterDto);
   //   }
 
-  //   @Get('admin/:adminId')
-  //   @RequirePermission('read', 'AdminRole')
-  //   @ApiOperation({ summary: 'Get all roles assigned to a specific admin' })
-  //   @ApiResponse({ status: 200, description: 'Returns all roles for the admin' })
-  //   findByAdminId(@Param('adminId', ParseUUIDPipe) adminId: Uuid) {
-  //     return this.adminRoleService.findByAdminId(adminId);
-  //   }
+  @Get('admin/:adminId')
+  @RequirePermission('read', 'AdminRole')
+  @ApiParam({
+    name: 'adminId',
+    type: 'string',
+    format: 'uuid',
+    description: 'Admin UUID',
+  })
+  @ApiOperation({ summary: 'Get all roles assigned to a specific admin' })
+  @ApiResponse({ status: 200, description: 'Returns all roles for the admin' })
+  findByAdminId(@Param('adminId', ParseUUIDPipe) adminId: Uuid) {
+    return this.adminRoleService.findByAdminId(adminId);
+  }
 
   //   @Get('role/:roleId')
   //   @RequirePermission('read', 'AdminRole')
