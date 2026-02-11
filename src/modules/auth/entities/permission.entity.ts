@@ -28,18 +28,16 @@ export class Permission extends AbstractEntity {
   description?: string;
 
   @Column({
-    type: 'jsonb',
-    comment: 'Array of actions: CREATE, READ, UPDATE, DELETE, APPROVE',
+    type: 'varchar',
     name: 'actions',
   })
-  actions!: PermissionAction[];
+  actions!: string;
 
   @Column({
-    type: 'jsonb',
-    comment: 'Array of subjects: BIRTH, PERSON, HOUSEHOLD, ADMIN',
+    type: 'varchar',
     name: 'subjects',
   })
-  subjects!: PermissionSubject[];
+  subjects!: string;
 
   @OneToMany('RolePermission', 'permission')
   rolePermissions!: RolePermission[];

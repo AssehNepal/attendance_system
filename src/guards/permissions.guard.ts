@@ -2,6 +2,8 @@ import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+import { PERMISSION_MAPPING } from '../constants/permission-mapping';
+
 export const PERMISSION_KEY = 'permission';
 
 export type PermissionAction = string;
@@ -47,13 +49,25 @@ export class PermissionsGuard implements CanActivate {
 
     // Check if user has the required permission in their ability array
     return user.ability.some((ability: any) => {
-      const hasAction = Array.isArray(ability.action)
-        ? ability.action.includes(requiredPermission.action)
-        : ability.action === requiredPermission.action;
+      const actionStr = String(ability.action);
+      const userActions = actionStr.split(',');
 
-      const hasSubject = Array.isArray(ability.subject)
-        ? ability.subject.includes(requiredPermission.subject)
-        : ability.subject === requiredPermission.subject;
+      // Expand composite actions
+      const expandedActions = new Set<string>();
+      userActions.forEach((action) => {
+        expandedActions.add(action.trim());
+        const mapped = PERMISSION_MAPPING[action.trim()];
+        if (mapped) {
+          mapped.forEach((m) => expandedActions.add(m.trim()));
+        }
+      });
+
+      const hasAction = expandedActions.has(requiredPermission.action);
+
+      const subjectStr = String(ability.subject);
+      const hasSubject =
+        subjectStr === '*' ||
+        subjectStr.split(',').some((s) => s.trim() === requiredPermission.subject);
 
       return hasAction && hasSubject;
     });

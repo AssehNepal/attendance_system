@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePermissionDto {
   @ApiProperty({
@@ -20,18 +20,18 @@ export class CreatePermissionDto {
   description?: string;
 
   @ApiProperty({
-    example: ['approve', 'verify', 'create', 'read', 'update', 'delete'],
+    example: 'manage-users',
     description: 'Allowed actions',
   })
-  @IsArray()
-  @IsString({ each: true })
-  actions!: string[];
+  @IsString()
+  @IsNotEmpty()
+  actions!: string;
 
   @ApiProperty({
-    example: ['birth Registration', 'death Registration', 'user creation'],
+    example: 'birth-registration',
     description: 'Subjects the permission applies to',
   })
-  @IsArray()
-  @IsString({ each: true })
-  subjects!: string[];
+  @IsString()
+  @IsNotEmpty()
+  subjects!: string;
 }

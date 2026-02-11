@@ -42,19 +42,13 @@ export class PermissionsService {
       );
     }
 
-    // 3. Validate actions array is not empty (400 Bad Request)
-    if (
-      !createPermissionDto.actions ||
-      createPermissionDto.actions.length === 0
-    ) {
+    // 3. Validate actions is not empty (400 Bad Request)
+    if (!createPermissionDto.actions) {
       throw new BadRequestException('Actions must not be empty');
     }
 
-    // 4. Validate subjects array is not empty (400 Bad Request)
-    if (
-      !createPermissionDto.subjects ||
-      createPermissionDto.subjects.length === 0
-    ) {
+    // 4. Validate subjects is not empty (400 Bad Request)
+    if (!createPermissionDto.subjects) {
       throw new BadRequestException('Subjects must not be empty');
     }
 
@@ -140,14 +134,14 @@ export class PermissionsService {
     }
 
     if (filterDto.action) {
-      queryBuilder.andWhere('permission.actions @> :actions', {
-        actions: JSON.stringify([filterDto.action]),
+      queryBuilder.andWhere('permission.actions ILIKE :action', {
+        action: `%${filterDto.action}%`,
       });
     }
 
     if (filterDto.subject) {
-      queryBuilder.andWhere('permission.subjects @> :subjects', {
-        subjects: JSON.stringify([filterDto.subject]),
+      queryBuilder.andWhere('permission.subjects ILIKE :subject', {
+        subject: `%${filterDto.subject}%`,
       });
     }
 

@@ -44,7 +44,7 @@ export class PermissionsController {
   @ApiResponse({
     status: 400,
     description:
-      'Bad Request - Invalid name/actions/subjects format or empty arrays',
+      'Bad Request - Invalid name/actions/subjects format or empty fields',
   })
   @ApiResponse({
     status: 409,

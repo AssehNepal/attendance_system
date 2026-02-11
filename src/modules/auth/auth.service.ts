@@ -24,6 +24,7 @@ import type { AdminLoginDto } from './dto/admin-login.dto';
 import type { CreateAdminDto } from './dto/create-admin.dto';
 import { randomBytes } from 'node:crypto';
 import { ApiConfigService } from '../../shared/services/api-config.service';
+import { PERMISSION_MAPPING } from '../../constants/permission-mapping';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -34,7 +35,7 @@ interface JwtPayload {
   roleType: 'CITIZEN' | 'ADMIN' | 'SUPER_ADMIN';
   type: TokenType;
   roles?: string[];
-  permissions?: Array<{ actions: string[]; subjects: string[] }>;
+  permissions?: Array<{ actions: string; subjects: string }>;
   officeLocationId?: Uuid;
 }
 
@@ -269,10 +270,8 @@ export class AuthService {
 
       const ability = permissionDetails.map((perm) => ({
         name: perm.name,
-        action:
-          (perm.actions.length === 1 ? perm.actions[0] : perm.actions) || [],
-        subject:
-          (perm.subjects.length === 1 ? perm.subjects[0] : perm.subjects) || [],
+        action: perm.actions || '',
+        subject: perm.subjects || '',
       }));
 
       const accessToken = await this.generateAccessToken({
@@ -399,16 +398,12 @@ export class AuthService {
     const { roles, permissions, permissionDetails } =
       await this.getAdminRolesAndPermissions(admin.id);
 
-    // Format ability array - flatten actions and subjects for each permission
+    // Format ability array
     const ability = permissionDetails.map((perm) => {
-      const action = perm.actions.length === 1 ? perm.actions[0] : perm.actions;
-      const subject =
-        perm.subjects.length === 1 ? perm.subjects[0] : perm.subjects;
-
       return {
         name: perm.name,
-        action: action || [],
-        subject: subject || [],
+        action: perm.actions || '',
+        subject: perm.subjects || '',
       };
     });
 
@@ -457,12 +452,12 @@ export class AuthService {
    */
   private async getAdminRolesAndPermissions(adminId: string): Promise<{
     roles: string[];
-    permissions: Array<{ actions: string[]; subjects: string[] }>;
+    permissions: Array<{ actions: string; subjects: string }>;
     permissionDetails: Array<{
       name: string;
       description?: string;
-      actions: string[];
-      subjects: string[];
+      actions: string;
+      subjects: string;
     }>;
   }> {
     const adminRoles = await this.adminRoleRepository.find({
@@ -487,16 +482,16 @@ export class AuthService {
         roles,
         permissions: [
           {
-            actions: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-            subjects: ['*'], // Wildcard for all subjects
+            actions: 'CREATE,READ,UPDATE,DELETE',
+            subjects: '*', // Wildcard for all subjects
           },
         ],
         permissionDetails: [
           {
             name: 'Super Admin',
             description: 'Full system access',
-            actions: ['CREATE', 'READ', 'UPDATE', 'DELETE'],
-            subjects: ['*'],
+            actions: 'CREATE,READ,UPDATE,DELETE',
+            subjects: '*',
           },
         ],
       };
@@ -505,7 +500,7 @@ export class AuthService {
     // Regular admin - get assigned permissions
     const permissionsMap = new Map<
       string,
-      { actions: string[]; subjects: string[] }
+      { actions: string; subjects: string }
     >();
 
     const permissionDetailsMap = new Map<
@@ -513,8 +508,8 @@ export class AuthService {
       {
         name: string;
         description?: string;
-        actions: string[];
-        subjects: string[];
+        actions: string;
+        subjects: string;
       }
     >();
 
@@ -698,14 +693,27 @@ export class AuthService {
    * Validates if user has required action on subject
    */
   hasPermission(
-    userPermissions: Array<{ actions: string[]; subjects: string[] }>,
+    userPermissions: Array<{ actions: string; subjects: string }>,
     requiredAction: string,
     requiredSubject: string,
   ): boolean {
     return userPermissions.some((perm) => {
-      const hasWildcard = perm.subjects.includes('*');
-      const hasSubject = hasWildcard || perm.subjects.includes(requiredSubject);
-      const hasAction = perm.actions.includes(requiredAction);
+      const subjectArray = (perm.subjects || '').split(',').map((s) => s.trim());
+      const actionArray = (perm.actions || '').split(',').map((a) => a.trim());
+
+      const expandedActions = new Set<string>();
+      actionArray.forEach((action) => {
+        expandedActions.add(action);
+        const mapped = PERMISSION_MAPPING[action];
+        if (mapped) {
+          mapped.forEach((m) => expandedActions.add(m.trim()));
+        }
+      });
+
+      const hasWildcard = subjectArray.includes('*');
+      const hasSubject = hasWildcard || subjectArray.includes(requiredSubject);
+      const hasAction = expandedActions.has(requiredAction);
+
       return hasSubject && hasAction;
     });
   }
