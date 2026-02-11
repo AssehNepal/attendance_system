@@ -1,38 +1,18 @@
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 
-import type { RoleType } from '../constants/role-type.ts';
-import type { UserEntity } from '../modules/users/entities/user.entity.ts';
-
+/**
+ * RolesGuard - DISABLED
+ *
+ * Roles are now informational only and not enforced.
+ * Only authentication (valid token) is required, which is handled by AuthGuard.
+ *
+ * This guard always returns true to allow all authenticated users.
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
-
-  canActivate(context: ExecutionContext): boolean {
-    const roles = this.reflector.get<RoleType[] | undefined>(
-      'roles',
-      context.getHandler(),
-    );
-
-    // If no roles are required, allow access
-    if (!roles?.length) {
-      return true;
-    }
-
-    const request = context.switchToHttp().getRequest<{ user: UserEntity }>();
-    const user = request.user;
-
-    if (!user) {
-      return false;
-    }
-
-    // 🔓 SUPER_ADMIN bypass - Full access regardless of required roles
-    if (user.roleType === 'SUPER_ADMIN') {
-      return true;
-    }
-
-    // Check if user's roleType is in the required roles
-    return roles.includes(user.roleType as RoleType);
+  canActivate(_context: ExecutionContext): boolean {
+    // 🔓 ALWAYS ALLOW - No role-based access control
+    return true;
   }
 }

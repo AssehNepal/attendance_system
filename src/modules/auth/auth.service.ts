@@ -24,7 +24,6 @@ import type { AdminLoginDto } from './dto/admin-login.dto';
 import type { CreateAdminDto } from './dto/create-admin.dto';
 import { randomBytes } from 'node:crypto';
 import { ApiConfigService } from '../../shared/services/api-config.service';
-import { PERMISSION_MAPPING } from '../../constants/permission-mapping';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -698,21 +697,15 @@ export class AuthService {
     requiredSubject: string,
   ): boolean {
     return userPermissions.some((perm) => {
-      const subjectArray = (perm.subjects || '').split(',').map((s) => s.trim());
+      const subjectArray = (perm.subjects || '')
+        .split(',')
+        .map((s) => s.trim());
       const actionArray = (perm.actions || '').split(',').map((a) => a.trim());
 
-      const expandedActions = new Set<string>();
-      actionArray.forEach((action) => {
-        expandedActions.add(action);
-        const mapped = PERMISSION_MAPPING[action];
-        if (mapped) {
-          mapped.forEach((m) => expandedActions.add(m.trim()));
-        }
-      });
-
+      // Note: PERMISSION_MAPPING removed - no longer expanding composite permissions
       const hasWildcard = subjectArray.includes('*');
       const hasSubject = hasWildcard || subjectArray.includes(requiredSubject);
-      const hasAction = expandedActions.has(requiredAction);
+      const hasAction = actionArray.includes(requiredAction);
 
       return hasSubject && hasAction;
     });
