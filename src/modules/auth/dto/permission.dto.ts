@@ -12,11 +12,11 @@ export class PermissionDto extends AbstractDto {
   @StringFieldOptional()
   description?: string | null;
 
-  @StringField({ isArray: true })
-  actions!: string[];
+  @StringField()
+  actions!: string;
 
-  @StringField({ isArray: true })
-  subjects!: string[];
+  @StringField()
+  subjects!: string;
 
   constructor(permission: Permission) {
     super(permission);

@@ -1,8 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreatePermissionsTable1705075200005
-  implements MigrationInterface
-{
+export class CreatePermissionsTable1705075200005 implements MigrationInterface {
   name = 'CreatePermissionsTable1705075200005';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -13,8 +11,8 @@ export class CreatePermissionsTable1705075200005
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         "name" character varying(100) NOT NULL,
         "description" text,
-        "actions" jsonb NOT NULL,
-        "subjects" jsonb NOT NULL,
+        "actions" character varying NOT NULL,
+        "subjects" character varying NOT NULL,
         CONSTRAINT "UQ_permissions_name" UNIQUE ("name"),
         CONSTRAINT "PK_permissions" PRIMARY KEY ("id")
       )

@@ -521,15 +521,25 @@ export class AuthService {
       ar.role.rolePermissions?.forEach((rp) => {
         const key = rp.permission.name;
         if (!permissionsMap.has(key)) {
+          // Convert comma-separated strings to arrays
+          const actionsArray = rp.permission.actions
+            .split(',')
+            .map((a) => a.trim())
+            .filter(Boolean);
+          const subjectsArray = rp.permission.subjects
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+
           permissionsMap.set(key, {
-            actions: rp.permission.actions,
-            subjects: rp.permission.subjects,
+            actions: actionsArray,
+            subjects: subjectsArray,
           });
           permissionDetailsMap.set(key, {
             name: rp.permission.name,
             description: rp.permission.description,
-            actions: rp.permission.actions,
-            subjects: rp.permission.subjects,
+            actions: actionsArray,
+            subjects: subjectsArray,
           });
         }
       });
