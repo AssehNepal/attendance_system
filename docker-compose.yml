@@ -10,7 +10,7 @@ services:
     links:
       - postgres
   postgres:
-    image: postgres
+    image: postgres:15
     container_name: census_postgres
     restart: always
     environment:
@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
   pgadmin:
     container_name: census_pgadmin
