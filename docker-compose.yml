@@ -1,9 +1,8 @@
-version: '3'
 services:
   common:
     env_file:
       - .env
-    container_name: census-backend
+    container_name: census_backend
     restart: always
     build: .
     ports:
@@ -12,7 +11,7 @@ services:
       - postgres
   postgres:
     image: postgres
-    container_name: postgres
+    container_name: census_postgres
     restart: always
     environment:
       DB_DATABASE: '${DB_DATABASE}'
@@ -21,21 +20,21 @@ services:
       TZ: 'GMT'
       PGTZ: 'GMT'
     ports:
-      - '${DB_PORT}:5432'
+      - '5433:5432'
     expose:
-      - '${DB_PORT}'
+      - '5433'
     env_file:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   pgadmin:
-    container_name: pgadmin
+    container_name: census_pgadmin
     image: dpage/pgadmin4
     ports:
-      - '8080:80'
+      - '8081:80'
     volumes:
-      - ~/pgadmin-data:/root/.pgadmin
+      - ~/census-pgadmin-data:/root/.pgadmin
     env_file:
       - .env
     links:
@@ -43,13 +42,13 @@ services:
 
   redis-server:
     image: redis
-    container_name: redis
+    container_name: census_redis
     ports:
-      - '6379:6379'
+      - '6380:6379'
     volumes:
-      - ~/redis-service/config/redis.conf:/redis.conf
+      - ~/census-redis-service/config/redis.conf:/redis.conf
     command: ['redis-server', '/redis.conf']
 
 volumes:
-  postgres:
+  postgres_data:
     driver: local
