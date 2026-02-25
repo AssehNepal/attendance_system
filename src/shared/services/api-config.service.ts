@@ -142,6 +142,19 @@ export class ApiConfigService {
     };
   }
 
+  // NATS Event Patterns - Listening from Common Service for Reverse Sync
+  get officeLocationSyncFromCommonCreatedPattern(): string {
+    return 'office_location.sync_to_auth.created';
+  }
+
+  get officeLocationSyncFromCommonUpdatedPattern(): string {
+    return 'office_location.sync_to_auth.updated';
+  }
+
+  get officeLocationSyncFromCommonDeletedPattern(): string {
+    return 'office_location.sync_to_auth.deleted';
+  }
+
   private get(key: string): string {
     const value = this.configService.get<string>(key);
 

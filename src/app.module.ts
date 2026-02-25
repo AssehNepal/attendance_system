@@ -5,7 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 
 import { DataSource } from 'typeorm';
-import { addTransactionalDataSource } from 'typeorm-transactional';
+import {
+  addTransactionalDataSource,
+  getDataSourceByName,
+} from 'typeorm-transactional';
 
 import { AuthModule } from './modules/auth/auth.module.ts';
 import { ForgotPasswordModule } from './modules/forgot-password/forgot-password.module';
@@ -49,14 +52,22 @@ import { SharedModule } from './shared/shared.module.ts';
       useFactory: (configService: ApiConfigService) =>
         configService.postgresConfig,
       inject: [ApiConfigService],
-      dataSourceFactory: (options) => {
+      dataSourceFactory: async (options) => {
         if (!options) {
           throw new Error('Invalid options passed');
         }
 
-        return Promise.resolve(
-          addTransactionalDataSource(new DataSource(options)),
-        );
+        // Check if DataSource already exists to avoid duplication when microservice initializes
+        try {
+          const existingDataSource = getDataSourceByName('default');
+          if (existingDataSource) {
+            return existingDataSource;
+          }
+        } catch (error) {
+          // DataSource doesn't exist yet, create it
+        }
+
+        return addTransactionalDataSource(new DataSource(options));
       },
     }),
     HealthCheckerModule,

@@ -298,4 +298,102 @@ export class OfficeLocationService {
       await queryRunner.release();
     }
   }
+
+  // ============================================
+  // REVERSE SYNC HANDLERS (from common_service)
+  // ============================================
+
+  async handleSyncFromCommonService(
+    event: OfficeLocationCreatedEvent,
+  ): Promise<void> {
+    try {
+      // Check if already exists (idempotency)
+      const existing = await this.officeLocationRepository.findOne({
+        where: { id: event.id as Uuid },
+      });
+
+      if (existing) {
+        console.log(
+          `Office location ${event.id} already exists in auth_service, skipping`,
+        );
+        return;
+      }
+
+      // Create without publishing back to common_service (avoid infinite loop)
+      const officeLocation = this.officeLocationRepository.create({
+        id: event.id as Uuid,
+        name: event.name,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+      });
+
+      await this.officeLocationRepository.save(officeLocation);
+      console.log(
+        `Office location ${event.id} synced to auth_service successfully`,
+      );
+    } catch (error) {
+      console.error(
+        `Error syncing office location ${event.id} to auth_service:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async handleSyncUpdateFromCommonService(
+    event: OfficeLocationUpdatedEvent,
+  ): Promise<void> {
+    try {
+      const officeLocation = await this.officeLocationRepository.findOne({
+        where: { id: event.id as Uuid },
+      });
+
+      if (!officeLocation) {
+        console.warn(
+          `Office location ${event.id} not found in auth_service, cannot update`,
+        );
+        return;
+      }
+
+      if (event.name) {
+        officeLocation.name = event.name;
+      }
+      officeLocation.updatedAt = event.updatedAt;
+
+      await this.officeLocationRepository.save(officeLocation);
+      console.log(
+        `Office location ${event.id} update synced to auth_service successfully`,
+      );
+    } catch (error) {
+      console.error(
+        `Error syncing office location update ${event.id} to auth_service:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async handleSyncDeleteFromCommonService(
+    event: OfficeLocationDeletedEvent,
+  ): Promise<void> {
+    try {
+      const result = await this.officeLocationRepository.delete(event.id);
+
+      if (result.affected === 0) {
+        console.warn(
+          `Office location ${event.id} not found in auth_service, already deleted`,
+        );
+      } else {
+        console.log(
+          `Office location ${event.id} deletion synced to auth_service successfully`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Error syncing office location deletion ${event.id} to auth_service:`,
+        error,
+      );
+      throw error;
+    }
+  }
 }

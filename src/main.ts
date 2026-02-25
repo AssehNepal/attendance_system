@@ -67,18 +67,20 @@ export async function bootstrap(): Promise<NestExpressApplication> {
 
   const configService = app.select(SharedModule).get(ApiConfigService);
 
-  // only start nats if it is enabled
+  // Connect NATS microservice if enabled
   if (configService.natsEnabled) {
     const natsConfig = configService.natsConfig;
     app.connectMicroservice({
       transport: Transport.NATS,
       options: {
-        url: `nats://${natsConfig.host}:${natsConfig.port}`,
-        queue: 'main_service',
+        servers: [`nats://${natsConfig.host}:${natsConfig.port}`],
+        queue: 'auth_service_queue',
       },
     });
-
     await app.startAllMicroservices();
+    console.info(
+      `✅ NATS Microservice connected on nats://${natsConfig.host}:${natsConfig.port}`,
+    );
   }
 
   if (configService.documentationEnabled) {
@@ -91,16 +93,6 @@ export async function bootstrap(): Promise<NestExpressApplication> {
   }
 
   const port = configService.appConfig.port;
-
-  // if (configService.isProduction) {
-  //   await app.listen(port);
-  //   console.info(`server running on ${await app.getUrl()}`);
-  // }
-
-  // Starts listening for shutdown hooks
-  if (!configService.isDevelopment) {
-    app.enableShutdownHooks();
-  }
 
   await app.listen(port);
 

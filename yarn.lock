@@ -3594,7 +3594,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/common@npm:^11.1.3":
+"@nestjs/common@npm:11.1.3":
   version: 11.1.3
   resolution: "@nestjs/common@npm:11.1.3"
   dependencies:
@@ -3631,7 +3631,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/core@npm:^11.1.3":
+"@nestjs/core@npm:11.1.3":
   version: 11.1.3
   resolution: "@nestjs/core@npm:11.1.3"
   dependencies:
@@ -3712,9 +3712,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/microservices@npm:^11.1.12":
-  version: 11.1.12
-  resolution: "@nestjs/microservices@npm:11.1.12"
+"@nestjs/microservices@npm:11.1.3":
+  version: 11.1.3
+  resolution: "@nestjs/microservices@npm:11.1.3"
   dependencies:
     iterare: "npm:1.2.1"
     tslib: "npm:2.8.1"
@@ -3751,7 +3751,7 @@ __metadata:
       optional: true
     nats:
       optional: true
-  checksum: 10c0/afcb64e88590b5b29ecb507ac13742169224ad8268ffbcb1efa10cc7de50349634932158135834b2225327be9f8cdf17c524d1b383cd29f51a51543669c724e4
+  checksum: 10c0/2a4876f664b4dd62852ecf1b451b4a1da74cde9d0c1ac2abaa4c98cb2b2c2fbf18e5fb36279696c61f8aeefd102c70ff034e27bdd71e36f69643981e131c047c
   languageName: node
   linkType: hard
 
@@ -7818,13 +7818,13 @@ __metadata:
     "@eslint/js": "npm:^9.28.0"
     "@nestjs-modules/mailer": "npm:^2.0.2"
     "@nestjs/cli": "npm:^11.0.7"
-    "@nestjs/common": "npm:^11.1.3"
+    "@nestjs/common": "npm:11.1.3"
     "@nestjs/config": "npm:^4.0.2"
-    "@nestjs/core": "npm:^11.1.3"
+    "@nestjs/core": "npm:11.1.3"
     "@nestjs/cqrs": "npm:^11.0.3"
     "@nestjs/event-emitter": "npm:^3.0.1"
     "@nestjs/jwt": "npm:^11.0.0"
-    "@nestjs/microservices": "npm:^11.1.12"
+    "@nestjs/microservices": "npm:11.1.3"
     "@nestjs/passport": "npm:^11.0.5"
     "@nestjs/platform-express": "npm:^11.1.3"
     "@nestjs/swagger": "npm:^11.2.0"
