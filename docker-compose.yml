@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - census_auth_postgres_data:/var/lib/postgresql/data
 
   pgadmin:
     container_name: census_pgadmin
@@ -34,21 +34,24 @@ services:
     ports:
       - '8081:80'
     volumes:
-      - ~/census-pgadmin-data:/root/.pgadmin
+      - ~/census-pgladmin-data:/var/lib/pgadmin
     env_file:
       - .env
     links:
       - postgres
 
   redis-server:
-    image: redis
+    image: redis:alpine
     container_name: census_redis
     ports:
       - '6380:6379'
     volumes:
-      - ~/census-redis-service/config/redis.conf:/redis.conf
-    command: ['redis-server', '/redis.conf']
+      - ~/census-redis-service/config/redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf', '--appendonly', 'yes']
 
 volumes:
-  postgres_data:
+  census_auth_postgres_data:
+    driver: local
+  redis_data:
     driver: local
