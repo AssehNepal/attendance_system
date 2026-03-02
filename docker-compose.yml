@@ -1,199 +1,58 @@
 services:
-  # Auth Service Backend
-  auth-backend:
+  common:
     env_file:
       - .env
-    container_name: census_auth_backend
+    container_name: census_backend
     restart: always
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     ports:
-      - '3001:3001'
-    depends_on:
-      - auth-postgres
-      - redis
-    networks:
-      - census-network
-
-  # Auth Service PostgreSQL Database
-  auth-postgres:
-    image: postgres:15-alpine
-    container_name: census_auth_postgres
+      - '$PORT:$PORT'
+    links:
+      - postgres
+  postgres:
+    image: postgres:15
+    container_name: census_postgres
     restart: always
     environment:
-      POSTGRES_DB: '${DB_DATABASE:-census_auth}'
-      POSTGRES_USER: '${DB_USERNAME:-postgres}'
-      POSTGRES_PASSWORD: '${DB_PASSWORD:-census@123}'
+      DB_DATABASE: '${DB_DATABASE}'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: census@123
       TZ: 'GMT'
       PGTZ: 'GMT'
     ports:
       - '5433:5432'
+    expose:
+      - '5433'
+    env_file:
+      - .env
     volumes:
       - census_auth_postgres_data:/var/lib/postgresql/data
-    networks:
-      - census-network
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # Common Service Backend
-  common-backend:
-    env_file:
-      - ../common_service/.env
-    container_name: census_common_backend
-    restart: always
-    build:
-      context: ../common_service
-      dockerfile: Dockerfile
+  pgadmin:
+    container_name: census_pgadmin
+    image: dpage/pgadmin4
     ports:
-      - '3002:3002'
-    depends_on:
-      - common-postgres
-      - redis
-      - minio
-    networks:
-      - census-network
-
-  # Common Service PostgreSQL Database
-  common-postgres:
-    image: postgres:15-alpine
-    container_name: census_common_postgres
-    restart: always
-    environment:
-      POSTGRES_DB: '${COMMON_DB_DATABASE:-census_common}'
-      POSTGRES_USER: '${DB_USERNAME:-postgres}'
-      POSTGRES_PASSWORD: '${DB_PASSWORD:-census@123}'
-      TZ: 'GMT'
-      PGTZ: 'GMT'
-    ports:
-      - '5435:5432'
+      - '8081:80'
     volumes:
-      - census_common_postgres_data:/var/lib/postgresql/data
-    networks:
-      - census-network
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Birth-Death Service Backend
-  birth-death-backend:
+      - ~/census-pgladmin-data:/var/lib/pgadmin
     env_file:
-      - ../birth-death-service/.env
-    container_name: census_birth_death_backend
-    restart: always
-    build:
-      context: ../birth-death-service
-      dockerfile: Dockerfile
-    ports:
-      - '3003:3003'
-    depends_on:
-      - birth-death-postgres
-      - redis
-    networks:
-      - census-network
+      - .env
+    links:
+      - postgres
 
-  # Birth-Death Service PostgreSQL Database
-  birth-death-postgres:
-    image: postgres:15-alpine
-    container_name: census_birth_death_postgres
-    restart: always
-    environment:
-      POSTGRES_DB: '${BIRTH_DEATH_DB_DATABASE:-census_birth_death}'
-      POSTGRES_USER: '${DB_USERNAME:-postgres}'
-      POSTGRES_PASSWORD: '${DB_PASSWORD:-census@123}'
-      TZ: 'GMT'
-      PGTZ: 'GMT'
-    ports:
-      - '5434:5432'
-    volumes:
-      - census_birth_death_postgres_data:/var/lib/postgresql/data
-    networks:
-      - census-network
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Shared Redis Server
-  redis:
+  redis-server:
     image: redis:alpine
     container_name: census_redis
-    restart: always
     ports:
       - '6380:6379'
     volumes:
+      - ~/census-redis-service/config/redis.conf:/usr/local/etc/redis/redis.conf
       - redis_data:/data
-    networks:
-      - census-network
-    command: ['redis-server', '--appendonly', 'yes']
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # MinIO Object Storage (for Common Service)
-  minio:
-    image: minio/minio:latest
-    container_name: census_minio
-    restart: always
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-    volumes:
-      - minio_data:/data
-    networks:
-      - census-network
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  # PgAdmin - Database Administration Tool
-  pgadmin:
-    container_name: census_pgadmin
-    image: dpage/pgadmin4:latest
-    restart: always
-    ports:
-      - '8081:80'
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@census.bt}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin@123}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - census-network
-    depends_on:
-      - auth-postgres
-      - common-postgres
-      - birth-death-postgres
+    command:
+      ['redis-server', '/usr/local/etc/redis/redis.conf', '--appendonly', 'yes']
 
 volumes:
   census_auth_postgres_data:
     driver: local
-  census_common_postgres_data:
-    driver: local
-  census_birth_death_postgres_data:
-    driver: local
   redis_data:
     driver: local
-  minio_data:
-    driver: local
-  pgadmin_data:
-    driver: local
-
-networks:
-  census-network:
-    driver: bridge
