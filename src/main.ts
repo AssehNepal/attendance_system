@@ -1,4 +1,4 @@
-import './boilerplate.polyfill';
+import './boilerplate.polyfill.js';
 
 import {
   ClassSerializerInterceptor,
@@ -14,14 +14,14 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { initializeTransactionalContext } from 'typeorm-transactional';
 
-import { AppModule } from './app.module.ts';
-import { HttpExceptionFilter } from './filters/bad-request.filter.ts';
-import { QueryFailedFilter } from './filters/query-failed.filter.ts';
+import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './filters/bad-request.filter';
+import { QueryFailedFilter } from './filters/query-failed.filter';
 
-import { setupSwagger } from './setup-swagger.ts';
-import { ApiConfigService } from './shared/services/api-config.service.ts';
+import { setupSwagger } from './setup-swagger';
+import { ApiConfigService } from './shared/services/api-config.service';
 
-import { SharedModule } from './shared/shared.module.ts';
+import { SharedModule } from './shared/shared.module';
 
 export async function bootstrap(): Promise<NestExpressApplication> {
   initializeTransactionalContext();

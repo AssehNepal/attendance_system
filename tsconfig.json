@@ -1,33 +1,32 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "lib": ["ESNext"],
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": ["ES2022"],
+    "types": ["node"],
     "moduleResolution": "Node",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "declaration": true,
     "noImplicitAny": true,
     "removeComments": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
     "importHelpers": true,
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "useDefineForClassFields": true,
     "allowUnreachableCode": false,
     "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": true,
     "isolatedModules": true,
-//    "exactOptionalPropertyTypes": true,
     "noImplicitThis": true,
-//    "noPropertyAccessFromIndexSignature": true,
     "noUnusedParameters": true,
     "noUnusedLocals": true,
     "strictPropertyInitialization": true,
-    "target": "ESNext",
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "noEmitHelpers": true,
@@ -41,14 +40,8 @@
   "ts-node": {
     "experimentalSpecifierResolution": "node",
     "transpileOnly": true,
-    "esm": true,
-},
-  "include": [
-    "src/**/*",
-],
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts",
-    
-  ]
+    "esm": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }
