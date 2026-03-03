@@ -362,4 +362,26 @@ export class AdminService {
 
     return { statusCode: 200, message: 'Password updated successfully' };
   }
+
+  async findByOfficeLocationId(officeLocationId: string): Promise<Admin | null> {
+    try {
+      console.log(`[NATS] Finding admin for office location: ${officeLocationId}`);
+      
+      const admin = await this.adminRepository.findOne({
+        where: { officeLocationId: officeLocationId as any },
+        relations: ['officeLocation', 'agency'],
+      });
+
+      if (!admin) {
+        console.log(`[NATS] No admin found for office location: ${officeLocationId}`);
+        return null;
+      }
+
+      console.log(`[NATS] Found admin: ${admin.fullName} (${admin.id})`);
+      return admin;
+    } catch (error) {
+      console.error(`[NATS] Error finding admin by office location:`, error);
+      throw error;
+    }
+  }
 }
