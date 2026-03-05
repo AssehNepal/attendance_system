@@ -247,6 +247,13 @@ export class AdminService {
   async update(id: Uuid, updateAdminDto: UpdateAdminDto): Promise<Admin> {
     const admin = await this.findOne(id);
 
+    console.log('[UPDATE] Current admin data:', {
+      id: admin.id,
+      officeLocationId: admin.officeLocationId,
+      agencyId: admin.agencyId,
+    });
+    console.log('[UPDATE] Update payload:', updateAdminDto);
+
     // If updating CID, check for conflicts
     if (updateAdminDto.cidNo && updateAdminDto.cidNo !== admin.cidNo) {
       const existing = await this.adminRepository.findOne({
@@ -268,9 +275,35 @@ export class AdminService {
       );
     }
 
+    // Clear existing relations if IDs are being updated
+    if (updateAdminDto.officeLocationId !== undefined) {
+      admin.officeLocation = undefined;
+    }
+    if (updateAdminDto.agencyId !== undefined) {
+      admin.agency = undefined;
+    }
+
     Object.assign(admin, updateAdminDto);
 
-    return this.adminRepository.save(admin);
+    console.log('[UPDATE] Admin before save:', {
+      id: admin.id,
+      officeLocationId: admin.officeLocationId,
+      agencyId: admin.agencyId,
+    });
+
+    await this.adminRepository.save(admin);
+
+    // Reload the admin with fresh relations to ensure updated officeLocation and agency are returned
+    const updated = await this.findOne(id);
+    console.log('[UPDATE] Admin after reload:', {
+      id: updated.id,
+      officeLocationId: updated.officeLocationId,
+      agencyId: updated.agencyId,
+      officeLocation: updated.officeLocation?.name,
+      agency: updated.agency?.name,
+    });
+
+    return updated;
   }
 
   async remove(id: Uuid): Promise<{ statusCode: number; message: string }> {
@@ -363,17 +396,23 @@ export class AdminService {
     return { statusCode: 200, message: 'Password updated successfully' };
   }
 
-  async findByOfficeLocationId(officeLocationId: string): Promise<Admin | null> {
+  async findByOfficeLocationId(
+    officeLocationId: string,
+  ): Promise<Admin | null> {
     try {
-      console.log(`[NATS] Finding admin for office location: ${officeLocationId}`);
-      
+      console.log(
+        `[NATS] Finding admin for office location: ${officeLocationId}`,
+      );
+
       const admin = await this.adminRepository.findOne({
         where: { officeLocationId: officeLocationId as any },
         relations: ['officeLocation', 'agency'],
       });
 
       if (!admin) {
-        console.log(`[NATS] No admin found for office location: ${officeLocationId}`);
+        console.log(
+          `[NATS] No admin found for office location: ${officeLocationId}`,
+        );
         return null;
       }
 
