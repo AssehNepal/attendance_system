@@ -1,5 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsArray, IsOptional } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsEnum } from 'class-validator';
+
+export enum ProofRequestPurpose {
+  LOGIN = 'login',
+  EKYC = 'ekyc',
+}
 
 export class CreateProofRequestDto {
   @ApiPropertyOptional({
@@ -9,6 +14,16 @@ export class CreateProofRequestDto {
   @IsString()
   @IsOptional()
   proofName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Purpose of the proof request',
+    example: 'login',
+    enum: ProofRequestPurpose,
+    enumName: 'ProofRequestPurpose',
+  })
+  @IsEnum(ProofRequestPurpose)
+  @IsOptional()
+  purpose?: ProofRequestPurpose;
 
   @ApiPropertyOptional({
     description: 'Array of attribute names to request from NDI',

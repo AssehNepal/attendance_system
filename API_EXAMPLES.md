@@ -7,6 +7,7 @@ Complete examples for testing all endpoints using curl, Postman, or any HTTP cli
 ## 1. Office Locations
 
 ### Create Office Location
+
 ```bash
 POST /office-locations
 Content-Type: application/json
@@ -17,21 +18,25 @@ Content-Type: application/json
 ```
 
 ### Get All Office Locations (Paginated)
+
 ```bash
 GET /office-locations?page=1&take=10&order=ASC
 ```
 
 ### Filter Office Locations
+
 ```bash
 GET /office-locations/search/filter?name=Thimphu
 ```
 
 ### Get Office Location by ID
+
 ```bash
 GET /office-locations/550e8400-e29b-41d4-a716-446655440000
 ```
 
 ### Update Office Location
+
 ```bash
 PATCH /office-locations/550e8400-e29b-41d4-a716-446655440000
 Content-Type: application/json
@@ -42,6 +47,7 @@ Content-Type: application/json
 ```
 
 ### Delete Office Location
+
 ```bash
 DELETE /office-locations/550e8400-e29b-41d4-a716-446655440000
 ```
@@ -51,6 +57,7 @@ DELETE /office-locations/550e8400-e29b-41d4-a716-446655440000
 ## 2. Agencies
 
 ### Create Agency
+
 ```bash
 POST /agencies
 Content-Type: application/json
@@ -63,22 +70,26 @@ Content-Type: application/json
 ```
 
 ### Get All Agencies
+
 ```bash
 GET /agencies?page=1&take=10
 ```
 
 ### Filter Agencies
+
 ```bash
 GET /agencies/search/filter?code=DOI
 GET /agencies/search/filter?name=Immigration
 ```
 
 ### Get Agency by ID
+
 ```bash
 GET /agencies/550e8400-e29b-41d4-a716-446655440001
 ```
 
 ### Update Agency
+
 ```bash
 PATCH /agencies/550e8400-e29b-41d4-a716-446655440001
 Content-Type: application/json
@@ -93,6 +104,7 @@ Content-Type: application/json
 ## 3. Permissions
 
 ### Create Permission
+
 ```bash
 POST /permissions
 Content-Type: application/json
@@ -106,6 +118,7 @@ Content-Type: application/json
 ```
 
 ### Create Multiple Permissions
+
 ```bash
 # Data Entry Permission
 POST /permissions
@@ -136,21 +149,25 @@ POST /permissions
 ```
 
 ### Get All Permissions
+
 ```bash
 GET /permissions?page=1&take=20
 ```
 
 ### Filter Permissions by Action
+
 ```bash
 GET /permissions/search/filter?action=create
 ```
 
 ### Filter Permissions by Subject
+
 ```bash
 GET /permissions/search/filter?subject=User
 ```
 
 ### Get Permission by ID
+
 ```bash
 GET /permissions/550e8400-e29b-41d4-a716-446655440002
 ```
@@ -160,6 +177,7 @@ GET /permissions/550e8400-e29b-41d4-a716-446655440002
 ## 4. Roles
 
 ### Create Role
+
 ```bash
 POST /roles
 Content-Type: application/json
@@ -171,6 +189,7 @@ Content-Type: application/json
 ```
 
 ### Create Multiple Roles
+
 ```bash
 # Super Admin Role
 POST /roles
@@ -195,6 +214,7 @@ POST /roles
 ```
 
 ### Assign Permission to Role
+
 ```bash
 POST /roles/550e8400-e29b-41d4-a716-446655440003/assign-permission
 Content-Type: application/json
@@ -205,22 +225,26 @@ Content-Type: application/json
 ```
 
 ### Remove Permission from Role
+
 ```bash
 DELETE /roles/550e8400-e29b-41d4-a716-446655440003/remove-permission/550e8400-e29b-41d4-a716-446655440002
 ```
 
 ### Get All Roles
+
 ```bash
 GET /roles?page=1&take=10
 ```
 
 ### Filter Roles
+
 ```bash
 GET /roles/search/filter?name=Admin
 GET /roles/search/filter?hasPermissions=true
 ```
 
 ### Get Role by ID (with Permissions)
+
 ```bash
 GET /roles/550e8400-e29b-41d4-a716-446655440003
 ```
@@ -230,6 +254,7 @@ GET /roles/550e8400-e29b-41d4-a716-446655440003
 ## 5. Users (Citizens)
 
 ### Create User
+
 ```bash
 POST /users
 Content-Type: application/json
@@ -241,6 +266,7 @@ Content-Type: application/json
 ```
 
 ### Create User without Password (NDI Auth)
+
 ```bash
 POST /users
 Content-Type: application/json
@@ -252,16 +278,19 @@ Content-Type: application/json
 ```
 
 ### Get All Users
+
 ```bash
 GET /users?page=1&take=20&order=DESC
 ```
 
 ### Search Users by CID
+
 ```bash
 GET /users?cidNo=112345
 ```
 
 ### Filter Users
+
 ```bash
 GET /users/search/filter?cidNo=112
 GET /users/search/filter?hasPassword=true
@@ -269,11 +298,13 @@ GET /users/search/filter?roleType=CITIZEN
 ```
 
 ### Get User by ID
+
 ```bash
 GET /users/550e8400-e29b-41d4-a716-446655440004
 ```
 
 ### Update User
+
 ```bash
 PATCH /users/550e8400-e29b-41d4-a716-446655440004
 Content-Type: application/json
@@ -284,6 +315,7 @@ Content-Type: application/json
 ```
 
 ### Delete User
+
 ```bash
 DELETE /users/550e8400-e29b-41d4-a716-446655440004
 ```
@@ -293,6 +325,7 @@ DELETE /users/550e8400-e29b-41d4-a716-446655440004
 ## 6. Admin
 
 ### Create Admin
+
 ```bash
 POST /admin
 Content-Type: application/json
@@ -301,13 +334,14 @@ Content-Type: application/json
   "cidNo": "11234567890124",
   "password": "AdminPass@123",
   "email": "admin@census.gov.bt",
-  "mobileNo": "17123456",
+  "mobileNo": "17916017",
   "officeLocationId": "550e8400-e29b-41d4-a716-446655440000",
   "agencyId": "550e8400-e29b-41d4-a716-446655440001"
 }
 ```
 
 ### Create Admin without Office/Agency
+
 ```bash
 POST /admin
 Content-Type: application/json
@@ -320,21 +354,25 @@ Content-Type: application/json
 ```
 
 ### Get All Admins
+
 ```bash
 GET /admin?page=1&take=10
 ```
 
 ### Filter Admins by Office Location
+
 ```bash
 GET /admin?officeLocationId=550e8400-e29b-41d4-a716-446655440000
 ```
 
 ### Filter Admins by Agency
+
 ```bash
 GET /admin?agencyId=550e8400-e29b-41d4-a716-446655440001
 ```
 
 ### Advanced Filter
+
 ```bash
 GET /admin/search/filter?cidNo=112
 GET /admin/search/filter?email=admin@census
@@ -342,12 +380,14 @@ GET /admin/search/filter?mobileNo=171
 ```
 
 ### Get Admin by ID (with Relations)
+
 ```bash
 GET /admin/550e8400-e29b-41d4-a716-446655440005
 # Returns admin with office location, agency, and roles
 ```
 
 ### Update Admin
+
 ```bash
 PATCH /admin/550e8400-e29b-41d4-a716-446655440005
 Content-Type: application/json
@@ -359,6 +399,7 @@ Content-Type: application/json
 ```
 
 ### Assign Role to Admin
+
 ```bash
 POST /admin/550e8400-e29b-41d4-a716-446655440005/assign-role
 Content-Type: application/json
@@ -369,6 +410,7 @@ Content-Type: application/json
 ```
 
 ### Assign Multiple Roles
+
 ```bash
 # Assign first role
 POST /admin/550e8400-e29b-41d4-a716-446655440005/assign-role
@@ -384,11 +426,13 @@ POST /admin/550e8400-e29b-41d4-a716-446655440005/assign-role
 ```
 
 ### Remove Role from Admin
+
 ```bash
 DELETE /admin/550e8400-e29b-41d4-a716-446655440005/remove-role/550e8400-e29b-41d4-a716-446655440003
 ```
 
 ### Delete Admin
+
 ```bash
 DELETE /admin/550e8400-e29b-41d4-a716-446655440005
 ```
@@ -398,6 +442,7 @@ DELETE /admin/550e8400-e29b-41d4-a716-446655440005
 ## Complete Workflow Example
 
 ### Step 1: Setup Basic Data
+
 ```bash
 # 1. Create Office Location
 POST /office-locations
@@ -416,6 +461,7 @@ POST /agencies
 ```
 
 ### Step 2: Create Permissions
+
 ```bash
 # Create permissions
 POST /permissions
@@ -436,6 +482,7 @@ POST /permissions
 ```
 
 ### Step 3: Create Roles
+
 ```bash
 # Create Super Admin role
 POST /roles
@@ -455,6 +502,7 @@ POST /roles
 ```
 
 ### Step 4: Assign Permissions to Roles
+
 ```bash
 # Assign all permissions to Super Admin
 POST /roles/role-uuid-1/assign-permission
@@ -475,6 +523,7 @@ POST /roles/role-uuid-2/assign-permission
 ```
 
 ### Step 5: Create Admin Users
+
 ```bash
 # Create Super Admin user
 POST /admin
@@ -482,7 +531,7 @@ POST /admin
   "cidNo": "11234567890123",
   "password": "SuperAdmin@123",
   "email": "superadmin@census.gov.bt",
-  "mobileNo": "17123456",
+  "mobileNo": "17916017",
   "officeLocationId": "office-uuid-1",
   "agencyId": "agency-uuid-1"
 }
@@ -501,6 +550,7 @@ POST /admin
 ```
 
 ### Step 6: Assign Roles to Admins
+
 ```bash
 # Assign Super Admin role
 POST /admin/admin-uuid-1/assign-role
@@ -516,6 +566,7 @@ POST /admin/admin-uuid-2/assign-role
 ```
 
 ### Step 7: Create Citizens
+
 ```bash
 # Create citizen user
 POST /users
@@ -527,6 +578,7 @@ POST /users
 ```
 
 ### Step 8: Verify Everything
+
 ```bash
 # Get admin with all relations
 GET /admin/admin-uuid-1
@@ -548,18 +600,21 @@ GET /admin/search/filter?officeLocationId=office-uuid-1
 ## Pagination Examples
 
 ### Default Pagination
+
 ```bash
 GET /users
 # Returns first 10 items, ASC order
 ```
 
 ### Custom Page Size
+
 ```bash
 GET /users?take=50
 # Returns 50 items per page
 ```
 
 ### Navigate Pages
+
 ```bash
 GET /users?page=1&take=20  # First page
 GET /users?page=2&take=20  # Second page
@@ -567,12 +622,14 @@ GET /users?page=3&take=20  # Third page
 ```
 
 ### Descending Order
+
 ```bash
 GET /users?order=DESC
 # Newest items first
 ```
 
 ### Combined Parameters
+
 ```bash
 GET /admin?page=1&take=25&order=DESC&cidNo=112
 # Page 1, 25 items, DESC order, filtered by CID
@@ -583,6 +640,7 @@ GET /admin?page=1&take=25&order=DESC&cidNo=112
 ## Response Examples
 
 ### Successful Create (201)
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -593,6 +651,7 @@ GET /admin?page=1&take=25&order=DESC&cidNo=112
 ```
 
 ### Paginated Response (200)
+
 ```json
 {
   "data": [
@@ -614,6 +673,7 @@ GET /admin?page=1&take=25&order=DESC&cidNo=112
 ```
 
 ### Not Found (404)
+
 ```json
 {
   "statusCode": 404,
@@ -623,6 +683,7 @@ GET /admin?page=1&take=25&order=DESC&cidNo=112
 ```
 
 ### Conflict (409)
+
 ```json
 {
   "statusCode": 409,
@@ -632,13 +693,11 @@ GET /admin?page=1&take=25&order=DESC&cidNo=112
 ```
 
 ### Validation Error (400)
+
 ```json
 {
   "statusCode": 400,
-  "message": [
-    "cidNo should not be empty",
-    "password must be longer than or equal to 8 characters"
-  ],
+  "message": ["cidNo should not be empty", "password must be longer than or equal to 8 characters"],
   "error": "Bad Request"
 }
 ```
@@ -648,6 +707,7 @@ GET /admin?page=1&take=25&order=DESC&cidNo=112
 ## cURL Examples
 
 ### Create Admin
+
 ```bash
 curl -X POST http://localhost:3000/admin \
   -H "Content-Type: application/json" \
@@ -659,11 +719,13 @@ curl -X POST http://localhost:3000/admin \
 ```
 
 ### Get All Admins
+
 ```bash
 curl -X GET "http://localhost:3000/admin?page=1&take=10"
 ```
 
 ### Assign Role to Admin
+
 ```bash
 curl -X POST http://localhost:3000/admin/550e8400-e29b-41d4-a716-446655440005/assign-role \
   -H "Content-Type: application/json" \
@@ -673,6 +735,7 @@ curl -X POST http://localhost:3000/admin/550e8400-e29b-41d4-a716-446655440005/as
 ```
 
 ### Delete Admin
+
 ```bash
 curl -X DELETE http://localhost:3000/admin/550e8400-e29b-41d4-a716-446655440005
 ```

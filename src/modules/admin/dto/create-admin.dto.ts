@@ -53,7 +53,7 @@ export class CreateAdminDto {
   @IsUUID('4', { message: 'agencyId must be a valid UUID' })
   agencyId?: string;
 
-  @ApiPropertyOptional({ example: '17123456', description: 'Mobile number' })
+  @ApiPropertyOptional({ example: '17916017', description: 'Mobile number' })
   @IsString()
   @IsOptional()
   mobileNo?: string;

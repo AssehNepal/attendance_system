@@ -48,6 +48,7 @@ export class AuthController {
         summary: 'Census Identity Verification (Recommended)',
         value: {
           proofName: 'Verify Identity for Census',
+          purpose: 'login',
           attributes: ['ID Number', 'Full Name', 'Date of Birth', 'Gender'],
         },
       },
@@ -55,6 +56,7 @@ export class AuthController {
         summary: 'Basic Verification',
         value: {
           proofName: 'Verify Foundational ID',
+          purpose: 'login',
           attributes: ['ID Number', 'Full Name'],
         },
       },

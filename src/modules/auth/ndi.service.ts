@@ -240,14 +240,22 @@ export class NdiService implements OnModuleInit {
 
     const proofName = dto.proofName || 'Verify Foundational ID';
     const attributes = dto.attributes || ['ID Number', 'Full Name'];
+    const purpose = dto.purpose || 'login'; // Default to 'login' if not provided
 
     const requestBody = {
       proofName,
+      purpose,
       proofAttributes: attributes.map((attr) => ({
         name: attr,
         restrictions: [{ schema_name: schemaName }],
       })),
     };
+
+    // // Log the request body being sent to NDI API
+    // this.logger.log(
+    //   `NDI API Request Body: ${JSON.stringify(requestBody, null, 2)}`,
+    // );
+    // this.logger.log(`DTO received: ${JSON.stringify(dto, null, 2)}`);
 
     try {
       const response = await fetch(`${verifierUrl}/verifier/v1/proof-request`, {
