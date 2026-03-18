@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class UserInfo {
   @ApiProperty()
@@ -15,6 +15,9 @@ class UserInfo {
 
   @ApiProperty({ type: [String] })
   roles!: string[];
+
+  @ApiPropertyOptional()
+  officeLocationId?: string;
 }
 
 export class LoginResponseDto {

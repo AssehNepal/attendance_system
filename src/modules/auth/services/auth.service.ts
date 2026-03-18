@@ -49,6 +49,7 @@ export interface LoginResponse {
     fullName: string;
     roleType: string;
     roles?: string[];
+    officeLocationId?: string;
   };
   ability?: Array<{
     name: string;
@@ -389,6 +390,7 @@ export class AuthService {
           fullName: admin.fullName || 'Unknown Admin',
           roleType: admin.roleType,
           roles: [],
+          officeLocationId: admin.officeLocationId ?? undefined,
         },
         ability: [], // SUPER_ADMIN has no restrictions, empty ability array
       };
@@ -446,6 +448,7 @@ export class AuthService {
         fullName: admin.fullName || 'Unknown Admin',
         roleType: admin.roleType,
         roles,
+        officeLocationId: admin.officeLocationId ?? undefined,
       },
       ability,
     };
