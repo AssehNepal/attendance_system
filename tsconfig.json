@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS",
+    "module": "NodeNext",
     "lib": ["ES2022"],
     "types": ["node"],
-    "moduleResolution": "Node",
+    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "declaration": true,
@@ -32,7 +32,6 @@
     "noEmitHelpers": true,
     "noUncheckedIndexedAccess": true,
     "outDir": "./dist",
-    "baseUrl": "./src",
     "incremental": true,
     "strict": true,
     "strictNullChecks": true
