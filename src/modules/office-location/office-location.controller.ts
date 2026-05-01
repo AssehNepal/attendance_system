@@ -1,32 +1,33 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  Query,
+  Get,
+  Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
+  ApiOperation,
   ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-import { OfficeLocationService } from './office-location.service';
-import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
-import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
-import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
-import { AuthGuard } from '../../guards/auth.guard.ts';
-import { RolesGuard } from '../../guards/roles.guard.ts';
-import { PermissionsGuard } from '../../guards/permissions.guard.ts';
-import { Roles } from '../../decorators/roles.decorator.ts';
-import { RequirePermission } from '../../decorators/permission.decorator.ts';
+
 import { RoleType } from '../../constants/role-type.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
+import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
+import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
+import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
+import { OfficeLocationService } from './office-location.service';
 
 @Controller('office-locations')
 @ApiTags('Office Locations')

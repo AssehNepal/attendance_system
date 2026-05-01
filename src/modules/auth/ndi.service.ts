@@ -1,17 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
 import type { OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   connect,
   type NatsConnection,
-  StringCodec,
   nkeyAuthenticator,
+  StringCodec,
 } from 'nats';
 
-import { CreateProofRequestDto } from './dto/create-proof-request.dto';
-import { ModuleRef } from '@nestjs/core';
 import { AuthService } from './auth.service';
+import { CreateProofRequestDto } from './dto/create-proof-request.dto';
 
 @Injectable()
 export class NdiService implements OnModuleInit {
@@ -51,9 +51,9 @@ export class NdiService implements OnModuleInit {
   onModuleInit() {
     this.authService = this.moduleRef.get(AuthService, { strict: false });
     this.startCleanupInterval();
-    this.connectToInternalNats().catch((err) =>
+    this.connectToInternalNats().catch((error) =>
       this.logger.warn(
-        `Failed to connect to internal NATS for multi-pod sync: ${err.message}`,
+        `Failed to connect to internal NATS for multi-pod sync: ${error.message}`,
       ),
     );
   }
@@ -99,13 +99,13 @@ export class NdiService implements OnModuleInit {
           try {
             const data = JSON.parse(sc.decode(msg.data));
             this.handleInternalBroadcast(data);
-          } catch (e) {
-            this.logger.error('Failed to parse internal NATS message', e);
+          } catch (error) {
+            this.logger.error('Failed to parse internal NATS message', error);
           }
         }
       })();
-    } catch (err) {
-      this.logger.error('Failed to connect to internal NATS', err);
+    } catch (error) {
+      this.logger.error('Failed to connect to internal NATS', error);
     }
   }
 
@@ -201,9 +201,9 @@ export class NdiService implements OnModuleInit {
       this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
 
       return this.accessToken as string;
-    } catch (err) {
-      this.logger.error('Failed to authenticate with NDI', err);
-      throw err;
+    } catch (error) {
+      this.logger.error('Failed to authenticate with NDI', error);
+      throw error;
     }
   }
 
@@ -402,8 +402,8 @@ export class NdiService implements OnModuleInit {
                       ndiData,
                       loginType,
                     });
-                  } catch (err: any) {
-                    const result = { status: 'failed', error: err.message };
+                  } catch (error: any) {
+                    const result = { status: 'failed', error: error.message };
                     this.eventEmitter.emit(
                       `ndi.verification.${threadId}`,
                       result,
@@ -420,8 +420,8 @@ export class NdiService implements OnModuleInit {
               await this.closeNatsConnection();
               break;
             }
-          } catch (e) {
-            this.logger.error('Error handling NDI NATS message', e);
+          } catch (error) {
+            this.logger.error('Error handling NDI NATS message', error);
           }
         }
       })();

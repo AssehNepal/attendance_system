@@ -4,9 +4,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import type {
-  AbstractDto,
-} from './dto/abstract.dto.ts';
+import type { AbstractDto } from './dto/abstract.dto.ts';
 
 /**
  * Abstract Entity
@@ -33,7 +31,6 @@ export abstract class AbstractEntity<
   })
   updatedAt!: Date;
 
-
   toDto(options?: O): DTO {
     const dtoClass = Object.getPrototypeOf(this).dtoClass;
 
@@ -46,4 +43,3 @@ export abstract class AbstractEntity<
     return new dtoClass(this, options);
   }
 }
-

@@ -1,18 +1,19 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
-import { CreateRoleDto } from './dto/create-role.dto';
-import { UpdateRoleDto } from './dto/update-role.dto';
-import { QueryRoleDto } from './dto/query-role.dto';
-import { FilterRoleDto } from './dto/filter-role.dto';
 import { AssignPermissionDto } from './dto/assign-permission.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { FilterRoleDto } from './dto/filter-role.dto';
+import { QueryRoleDto } from './dto/query-role.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from './entities/role.entity';
 import { RolePermission } from './entities/role-permission.entity';
 

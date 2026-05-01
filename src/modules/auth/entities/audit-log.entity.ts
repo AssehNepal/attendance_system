@@ -1,7 +1,8 @@
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+
+import { AbstractEntity } from '../../../common/abstract.entity';
 import type { User } from '../../users/entities/user.entity';
 import type { Admin } from './admin.entity';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
-import { AbstractEntity } from '../../../common/abstract.entity';
 
 @Entity('audit_log')
 export class AuditLog extends AbstractEntity {

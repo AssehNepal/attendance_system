@@ -1,5 +1,6 @@
 import { Exclude } from 'class-transformer';
 import { Column, Entity } from 'typeorm';
+
 import { AbstractEntity } from '../../../common/abstract.entity';
 
 @Entity('users')

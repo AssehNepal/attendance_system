@@ -1,7 +1,8 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+
 import { AbstractEntity } from '../../../common/abstract.entity';
-import type { Admin } from './admin.entity';
 import type { Role } from '../../roles/entities/role.entity';
+import type { Admin } from './admin.entity';
 
 @Entity('admin_role')
 export class AdminRole extends AbstractEntity {

@@ -1,24 +1,25 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
+
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
-import { CreateAdminDto } from './dto/create-admin.dto';
-import { UpdateAdminDto } from './dto/update-admin.dto';
-import { QueryAdminDto } from './dto/query-admin.dto';
-import { FilterAdminDto } from './dto/filter-admin.dto';
+import { Agency } from '../agency/entities/agency.entity';
+import { OfficeLocation } from '../office-location/entities/office-location.entity';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import { FilterAdminDto } from './dto/filter-admin.dto';
+import { QueryAdminDto } from './dto/query-admin.dto';
+import { UpdateAdminDto } from './dto/update-admin.dto';
 import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
-import { OfficeLocation } from '../office-location/entities/office-location.entity';
-import { Agency } from '../agency/entities/agency.entity';
 
 const BCRYPT_ROUNDS = 12;
 

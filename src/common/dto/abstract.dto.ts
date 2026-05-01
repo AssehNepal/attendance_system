@@ -1,5 +1,4 @@
 import { DateField, UUIDField } from '../../decorators/field.decorators.ts';
-
 import type { AbstractEntity } from '../abstract.entity.ts';
 
 export class AbstractDto {
@@ -12,7 +11,6 @@ export class AbstractDto {
   @DateField()
   updatedAt!: Date;
 
-
   constructor(entity: AbstractEntity, options?: { excludeFields?: boolean }) {
     if (!options?.excludeFields) {
       this.id = entity.id;
@@ -21,4 +19,3 @@ export class AbstractDto {
     }
   }
 }
-

@@ -1,7 +1,8 @@
 import { Column, Entity, OneToMany } from 'typeorm';
+
 import { AbstractEntity } from '../../../common/abstract.entity';
-import type { RolePermission } from './role-permission.entity';
 import type { AdminRole } from './admin-role.entity';
+import type { RolePermission } from './role-permission.entity';
 
 @Entity('roles')
 export class Role extends AbstractEntity {

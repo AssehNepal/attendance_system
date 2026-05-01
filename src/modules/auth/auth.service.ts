@@ -1,29 +1,31 @@
+import { randomBytes } from 'node:crypto';
+
 import {
-  Injectable,
-  UnauthorizedException,
   BadRequestException,
   ConflictException,
+  Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
-import { NdiService } from './ndi.service';
-import { Admin } from './entities/admin.entity';
-import { Role } from './entities/role.entity';
-import { Permission } from './entities/permission.entity';
-import { AdminRole } from './entities/admin-role.entity';
-import { RolePermission } from './entities/role-permission.entity';
-import { OfficeLocation } from './entities/office-location.entity';
-import { Agency } from '../agency/entities/agency.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
+
 import { TokenType } from '../../constants/token-type';
+import { ApiConfigService } from '../../shared/services/api-config.service';
+import { Agency } from '../agency/entities/agency.entity';
+import { UsersService } from '../users/users.service';
 import type { AdminLoginDto } from './dto/admin-login.dto';
 import type { CreateAdminDto } from './dto/create-admin.dto';
-import { randomBytes } from 'node:crypto';
-import { ApiConfigService } from '../../shared/services/api-config.service';
+import { Admin } from './entities/admin.entity';
+import { AdminRole } from './entities/admin-role.entity';
+import { OfficeLocation } from './entities/office-location.entity';
+import { Permission } from './entities/permission.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { Role } from './entities/role.entity';
+import { RolePermission } from './entities/role-permission.entity';
+import { NdiService } from './ndi.service';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -134,20 +136,7 @@ export class AuthService {
       // ---------------------------------------------------------
       let user = await this.usersService.findByCidNo(ndiData.cidNo);
 
-      if (!user) {
-        console.log('🔍 [authenticateViaNDI] Creating new user with data:', {
-          cidNo: ndiData.cidNo,
-          fullName: ndiData.fullName || 'Unknown User',
-        });
-        user = await this.usersService.create({
-          cidNo: ndiData.cidNo,
-          fullName: ndiData.fullName || 'Unknown User',
-        });
-        console.log(
-          '✅ [authenticateViaNDI] Created new citizen user:',
-          JSON.stringify(user, null, 2),
-        );
-      } else {
+      if (user) {
         console.log(
           '✅ [authenticateViaNDI] Found existing citizen user:',
           JSON.stringify(user, null, 2),
@@ -172,6 +161,19 @@ export class AuthService {
             JSON.stringify(user, null, 2),
           );
         }
+      } else {
+        console.log('🔍 [authenticateViaNDI] Creating new user with data:', {
+          cidNo: ndiData.cidNo,
+          fullName: ndiData.fullName || 'Unknown User',
+        });
+        user = await this.usersService.create({
+          cidNo: ndiData.cidNo,
+          fullName: ndiData.fullName || 'Unknown User',
+        });
+        console.log(
+          '✅ [authenticateViaNDI] Created new citizen user:',
+          JSON.stringify(user, null, 2),
+        );
       }
 
       const accessToken = await this.generateAccessToken({
@@ -515,28 +517,29 @@ export class AuthService {
       }
     >();
 
-    adminRoles.forEach((ar) => {
-      ar.role.rolePermissions?.forEach((rp) => {
-        const key = rp.permission.name;
-        if (!permissionsMap.has(key)) {
-          permissionsMap.set(key, {
-            actions: rp.permission.actions,
-            subjects: rp.permission.subjects,
-          });
-          permissionDetailsMap.set(key, {
-            name: rp.permission.name,
-            description: rp.permission.description,
-            actions: rp.permission.actions,
-            subjects: rp.permission.subjects,
-          });
+    for (const ar of adminRoles) {
+      if (ar.role.rolePermissions)
+        for (const rp of ar.role.rolePermissions) {
+          const key = rp.permission.name;
+          if (!permissionsMap.has(key)) {
+            permissionsMap.set(key, {
+              actions: rp.permission.actions,
+              subjects: rp.permission.subjects,
+            });
+            permissionDetailsMap.set(key, {
+              name: rp.permission.name,
+              description: rp.permission.description,
+              actions: rp.permission.actions,
+              subjects: rp.permission.subjects,
+            });
+          }
         }
-      });
-    });
+    }
 
     return {
       roles,
-      permissions: Array.from(permissionsMap.values()),
-      permissionDetails: Array.from(permissionDetailsMap.values()),
+      permissions: [...permissionsMap.values()],
+      permissionDetails: [...permissionDetailsMap.values()],
     };
   }
 
@@ -665,11 +668,11 @@ export class AuthService {
       relations: ['permission'],
     });
 
-    const uniquePermissions = Array.from(
-      new Map(
+    const uniquePermissions = [
+      ...new Map(
         rolePermissions.map((rp) => [rp.permission.id, rp.permission]),
       ).values(),
-    );
+    ];
 
     return {
       admin,
@@ -700,14 +703,14 @@ export class AuthService {
     requiredSubject: string,
   ): boolean {
     return userPermissions.some((perm) => {
-      const subjectArray = (perm.subjects || '')
-        .split(',')
-        .map((s) => s.trim());
+      const subjectArray = new Set(
+        (perm.subjects || '').split(',').map((s) => s.trim()),
+      );
       const actionArray = (perm.actions || '').split(',').map((a) => a.trim());
 
       // Note: PERMISSION_MAPPING removed - no longer expanding composite permissions
-      const hasWildcard = subjectArray.includes('*');
-      const hasSubject = hasWildcard || subjectArray.includes(requiredSubject);
+      const hasWildcard = subjectArray.has('*');
+      const hasSubject = hasWildcard || subjectArray.has(requiredSubject);
       const hasAction = actionArray.includes(requiredAction);
 
       return hasSubject && hasAction;

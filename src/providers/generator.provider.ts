@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/pseudo-random */
 import { v1 as uuid } from 'uuid';
 
 export class GeneratorProvider {

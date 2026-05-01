@@ -1,6 +1,4 @@
-import {
-  StringField,
-} from '../../../decorators/field.decorators.ts';
+import { StringField } from '../../../decorators/field.decorators.ts';
 
 export class CreateUserDto {
   @StringField()

@@ -1,33 +1,34 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  Query,
+  Get,
+  Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
+  ApiOperation,
   ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-import { PermissionsService } from './permissions.service';
-import { CreatePermissionDto } from './dto/create-permission.dto';
-import { UpdatePermissionDto } from './dto/update-permission.dto';
-import { QueryPermissionDto } from './dto/query-permission.dto';
-import { FilterPermissionDto } from './dto/filter-permission.dto.ts';
-import { AuthGuard } from '../../guards/auth.guard.ts';
-import { RolesGuard } from '../../guards/roles.guard.ts';
-import { PermissionsGuard } from '../../guards/permissions.guard.ts';
-import { Roles } from '../../decorators/roles.decorator.ts';
-import { RequirePermission } from '../../decorators/permission.decorator.ts';
+
 import { RoleType } from '../../constants/role-type.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
+import { CreatePermissionDto } from './dto/create-permission.dto';
+import { FilterPermissionDto } from './dto/filter-permission.dto.ts';
+import { QueryPermissionDto } from './dto/query-permission.dto';
+import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { PermissionsService } from './permissions.service';
 
 @Controller('permissions')
 @ApiTags('Permissions')

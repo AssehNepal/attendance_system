@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany } from 'typeorm';
+
 import { AbstractEntity } from '../../../common/abstract.entity';
 import type { RolePermission } from './role-permission.entity';
 

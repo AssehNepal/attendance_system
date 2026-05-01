@@ -1,25 +1,25 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { Request, Response } from 'express';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
-  Get,
   Req,
   Res,
-  Param,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 
-import { AuthService } from './auth.service';
-import type { LoginResponse } from './auth.service';
-import { NdiService } from './ndi.service';
-import { AdminLoginDto } from './dto/admin-login.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
-import { CreateProofRequestDto } from './dto/create-proof-request.dto';
 import { PublicRoute } from '../../decorators/public-route.decorator';
+import type { LoginResponse } from './auth.service';
+import { AuthService } from './auth.service';
+import { AdminLoginDto } from './dto/admin-login.dto';
+import { CreateProofRequestDto } from './dto/create-proof-request.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { NdiService } from './ndi.service';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -241,7 +241,7 @@ export class AuthController {
       if (!response.writableEnded) {
         response.write(': keepalive\n\n');
       }
-    }, 15000);
+    }, 15_000);
 
     response.on('close', () => {
       clearInterval(interval);
@@ -254,7 +254,7 @@ export class AuthController {
         response.end();
         this.eventEmitter.off(eventName, listener);
       }
-    }, 300000);
+    }, 300_000);
   }
 
   private getClientIp(req: Request): string {

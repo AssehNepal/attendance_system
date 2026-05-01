@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AdminRoleService } from './admin-role.service';
+
 import { AdminRoleController } from './admin-role.controller';
+import { AdminRoleService } from './admin-role.service';
 import { AdminRole } from './entities/admin-role.entity';
 
 @Module({

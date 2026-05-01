@@ -1,13 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   MinLength,
-  IsEnum,
 } from 'class-validator';
+
 import { RoleType } from '../../../constants/role-type';
 
 export class CreateAdminDto {
