@@ -26,7 +26,7 @@ Creates a new admin user with the following features:
   "cidNo": "22222222222222",
   "password": "SecurePassword@123",
   "email": "admin.thimphu@example.com",
-  "mobileNo": "17654321",
+  "mobileNo": "17916017",
   "agencyId": "NSB",
   "officeLocationId": "uuid-of-existing-office",
   "roleIds": ["uuid-of-admin-role", "uuid-of-dzongkhag-admin-role"]
@@ -65,13 +65,11 @@ Creates a new admin user with the following features:
 ## What Happens Internally
 
 1. **Validation**:
-
    - Checks if CID already exists (throws 409 Conflict if duplicate)
    - Validates all role IDs exist in database
    - Validates office location exists (if using ID)
 
 2. **Office Location**:
-
    - If `officeLocationId` provided: Uses existing office
    - If `officeLocationName` provided:
      - Checks if office with same name exists
@@ -79,14 +77,12 @@ Creates a new admin user with the following features:
      - Reuses existing office if name matches
 
 3. **Admin Creation**:
-
    - Hashes password with bcrypt (12 rounds)
    - Creates admin record in `admin` table
    - Sets `role_type` = 'ADMIN' automatically
    - Links to office location via `office_location_id`
 
 4. **Role Assignment** (`admin_role` table):
-
    - For each role in `roleIds`:
      - Creates entry in `admin_role` table
      - Links `admin_id` to `role_id`
@@ -116,7 +112,7 @@ Creates a new admin user with the following features:
     "cidNo": "22222222222222",
     "roleType": "ADMIN",
     "email": "admin.thimphu@example.com",
-    "mobileNo": "17654321",
+    "mobileNo": "17916017",
     "agencyId": "NSB",
     "officeLocation": {
       "id": "uuid-office-1",
@@ -211,7 +207,7 @@ Creates a new admin user with the following features:
 
 ```sql
 INSERT INTO admin (id, cid_no, password, email, mobile_no, agency_id, role_type, office_location_id)
-VALUES ('uuid-1', '22222222222222', '$2b$12$...', 'admin@example.com', '17654321', 'NSB', 'ADMIN', 'uuid-office');
+VALUES ('uuid-1', '22222222222222', '$2b$12$...', 'admin@example.com', '17916017', 'NSB', 'ADMIN', 'uuid-office');
 ```
 
 ### 2. `admin_role` table (automatically populated)
@@ -249,7 +245,7 @@ curl -X POST http://localhost:5001/auth/admin/create \
     "cidNo": "22222222222222",
     "password": "SecurePassword@123",
     "email": "admin.thimphu@example.com",
-    "mobileNo": "17654321",
+    "mobileNo": "17916017",
     "agencyId": "NSB",
     "officeLocationId": "uuid-of-existing-office",
     "roleIds": ["uuid-role-1", "uuid-role-2"]

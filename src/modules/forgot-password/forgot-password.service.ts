@@ -1,20 +1,21 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Admin } from '../admin/entities/admin.entity';
-import { PasswordResetOtp } from './entities/password-reset-otp.entity';
-import { GeneratorService } from '../../shared/services/generator.service';
-import { EmailService } from '../../shared/services/email.service';
-import { CreateForgotPasswordDto } from './dto/create-forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Repository } from 'typeorm';
+
 import { validateHash } from '../../common/utils';
 import { ApiConfigService } from '../../shared/services/api-config.service';
+import { EmailService } from '../../shared/services/email.service';
+import { GeneratorService } from '../../shared/services/generator.service';
+import { Admin } from '../admin/entities/admin.entity';
+import { CreateForgotPasswordDto } from './dto/create-forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { PasswordResetOtp } from './entities/password-reset-otp.entity';
 
 @Injectable()
 export class ForgotPasswordService {

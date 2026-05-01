@@ -4,23 +4,22 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApiConfigService } from '../../shared/services/api-config.service.ts';
-import { UsersModule } from '../users/users.module.ts';
 import { AgencyModule } from '../agency/agency.module';
+import { User } from '../users/entities/user.entity';
+import { UsersModule } from '../users/users.module.ts';
 import { AuthController } from './auth.controller.ts';
 import { AuthService } from './auth.service';
-import { NdiService } from './ndi.service';
-import { JwtStrategy } from './jwt.strategy';
-import { PublicStrategy } from './public.strategy';
-
 // Import all auth entities
 import { Admin } from './entities/admin.entity';
 import { AdminRole } from './entities/admin-role.entity';
 import { OfficeLocation } from './entities/office-location.entity';
 import { Permission } from './entities/permission.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { Role } from './entities/role.entity';
 import { RolePermission } from './entities/role-permission.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
-import { User } from '../users/entities/user.entity';
+import { JwtStrategy } from './jwt.strategy';
+import { NdiService } from './ndi.service';
+import { PublicStrategy } from './public.strategy';
 
 @Module({
   imports: [
@@ -57,12 +56,7 @@ import { User } from '../users/entities/user.entity';
     AgencyModule,
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    NdiService,
-    JwtStrategy,
-    PublicStrategy,
-  ],
+  providers: [AuthService, NdiService, JwtStrategy, PublicStrategy],
   exports: [JwtModule, AuthService, NdiService],
 })
 export class AuthModule {}

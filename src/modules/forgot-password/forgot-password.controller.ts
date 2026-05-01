@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+
 import { PublicRoute } from '../../decorators/public-route.decorator';
 import { CreateForgotPasswordDto } from './dto/create-forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';

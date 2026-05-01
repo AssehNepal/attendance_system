@@ -16,7 +16,6 @@ export function SameAs(
         validate(value, args) {
           const [relatedPropertyName] = args!.constraints as [string];
 
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
           return (args!.object as any)[relatedPropertyName] === value;
         },
         defaultMessage() {

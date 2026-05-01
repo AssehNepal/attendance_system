@@ -1,6 +1,6 @@
 import { ClassField } from '../../../decorators/field.decorators.ts';
-import { UserDto } from './user.dto.ts';
 import { TokenPayloadDto } from './token-payload.dto.ts';
+import { UserDto } from './user.dto.ts';
 
 export class LoginPayloadDto {
   @ClassField(() => UserDto)

@@ -1,6 +1,5 @@
 import { ClsServiceManager } from 'nestjs-cls';
 
-
 import type { UserEntity } from '../modules/users/entities/user.entity.ts';
 
 export class ContextProvider {
@@ -8,15 +7,12 @@ export class ContextProvider {
 
   private static readonly authUserKey = 'user_key';
 
-
-
   private static get<T>(key: string) {
     const store = ClsServiceManager.getClsService();
 
     return store.get<T>(ContextProvider.getKeyWithNamespace(key));
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static set(key: string, value: any): void {
     const store = ClsServiceManager.getClsService();
 
@@ -30,8 +26,6 @@ export class ContextProvider {
   static setAuthUser(user: UserEntity): void {
     ContextProvider.set(ContextProvider.authUserKey, user);
   }
-
-
 
   static getAuthUser(): UserEntity | undefined {
     return ContextProvider.get<UserEntity>(ContextProvider.authUserKey);

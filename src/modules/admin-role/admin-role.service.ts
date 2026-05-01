@@ -1,15 +1,16 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { CreateAdminRoleDto } from './dto/create-admin-role.dto';
-import { UpdateAdminRoleDto } from './dto/update-admin-role.dto';
 import { QueryAdminRoleDto } from './dto/query-admin-role.dto';
+import { UpdateAdminRoleDto } from './dto/update-admin-role.dto';
 import { AdminRole } from './entities/admin-role.entity';
 
 @Injectable()

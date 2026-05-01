@@ -1,11 +1,12 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { OfficeLocationService } from './office-location.service';
+
 import {
   OfficeLocationCreatedEvent,
-  OfficeLocationUpdatedEvent,
   OfficeLocationDeletedEvent,
+  OfficeLocationUpdatedEvent,
 } from './events';
+import { OfficeLocationService } from './office-location.service';
 
 @Controller()
 export class OfficeLocationNatsController {

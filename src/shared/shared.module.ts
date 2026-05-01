@@ -1,15 +1,14 @@
 import type { Provider } from '@nestjs/common';
 import { Global, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 import { ApiConfigService } from './services/api-config.service.ts';
 import { AwsS3Service } from './services/aws-s3.service.ts';
 import { EmailService } from './services/email.service.ts';
 import { GeneratorService } from './services/generator.service.ts';
-
 import { ValidatorService } from './services/validator.service.ts';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { MailerModule } from '@nestjs-modules/mailer';
 
 const providers: Provider[] = [
   ApiConfigService,

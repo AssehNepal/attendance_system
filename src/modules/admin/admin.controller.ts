@@ -1,35 +1,36 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  Query,
+  Get,
+  Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
+  ApiOperation,
   ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
+
+import { RoleType } from '../../constants/role-type.ts';
+import { RequirePermission } from '../../decorators/permission.decorator.ts';
+import { Roles } from '../../decorators/roles.decorator.ts';
+import { AuthGuard } from '../../guards/auth.guard.ts';
+import { PermissionsGuard } from '../../guards/permissions.guard.ts';
+import { RolesGuard } from '../../guards/roles.guard.ts';
 import { AdminService } from './admin.service';
-import { CreateAdminDto } from './dto/create-admin.dto';
-import { UpdateAdminDto } from './dto/update-admin.dto';
-import { QueryAdminDto } from './dto/query-admin.dto';
 // import { FilterAdminDto } from './dto/filter-admin.dto.ts';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { AuthGuard } from '../../guards/auth.guard.ts';
-import { RolesGuard } from '../../guards/roles.guard.ts';
-import { PermissionsGuard } from '../../guards/permissions.guard.ts';
-import { Roles } from '../../decorators/roles.decorator.ts';
-import { RequirePermission } from '../../decorators/permission.decorator.ts';
-import { RoleType } from '../../constants/role-type.ts';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import { QueryAdminDto } from './dto/query-admin.dto';
+import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Controller('admin')
 @ApiTags('Admin')
@@ -200,5 +201,4 @@ export class AdminController {
   ) {
     return this.adminService.removeRole(adminId, roleId);
   }
-
 }

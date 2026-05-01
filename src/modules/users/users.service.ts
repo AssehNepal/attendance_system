@@ -1,18 +1,19 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
 import { PageOptionsDto } from '../../common/dto/page-options.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { QueryUserDto } from './dto/query-user.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -24,7 +25,7 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     // 1. Validate CID length (400 Bad Request)
-    if (createUserDto.cidNo.length < 1 || createUserDto.cidNo.length > 20) {
+    if (createUserDto.cidNo.length === 0 || createUserDto.cidNo.length > 20) {
       throw new BadRequestException('CID must be at least 1 character');
     }
 

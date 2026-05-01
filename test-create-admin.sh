@@ -25,7 +25,7 @@ cat << 'EOF' > /tmp/create_admin_request.json
   "cidNo": "22222222222222",
   "password": "SecurePassword@123",
   "email": "admin.thimphu@census.gov.bt",
-  "mobileNo": "17654321",
+  "mobileNo": "17916017",
   "agencyId": "NSB",
   "officeLocationName": "Thimphu Regional Office",
   "roleIds": [

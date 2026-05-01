@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { registerDecorator, ValidatorConstraint } from 'class-validator';
 import type {
+  ValidationArguments,
   ValidationOptions,
   ValidatorConstraintInterface,
-  ValidationArguments,
 } from 'class-validator';
+import { registerDecorator, ValidatorConstraint } from 'class-validator';
 import { Repository } from 'typeorm';
+
 import { Admin } from '../modules/admin/entities/admin.entity';
 
 @ValidatorConstraint({ async: true })

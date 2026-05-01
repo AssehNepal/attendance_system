@@ -1,4 +1,8 @@
-import { StringFieldOptional, EmailFieldOptional, PhoneFieldOptional } from '../../../decorators/field.decorators';
+import {
+  EmailFieldOptional,
+  PhoneFieldOptional,
+  StringFieldOptional,
+} from '../../../decorators/field.decorators';
 
 export class CreateForgotPasswordDto {
   @StringFieldOptional({ minLength: 1 })

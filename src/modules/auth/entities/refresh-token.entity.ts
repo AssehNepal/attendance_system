@@ -1,8 +1,9 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+
 import { AbstractEntity } from '../../../common/abstract.entity.ts';
 import { UseDto } from '../../../decorators/use-dto.decorator.ts';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import type { User } from '../../users/entities/user.entity.ts';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import type { Admin } from './admin.entity.ts';
 
 @Entity({ name: 'refresh_tokens' })

@@ -1,9 +1,10 @@
 import { Exclude } from 'class-transformer';
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+
 import { AbstractEntity } from '../../../common/abstract.entity';
+import type { Agency } from '../../agency/entities/agency.entity';
 import type { OfficeLocation } from '../../office-location/entities/office-location.entity';
 import type { AdminRole } from './admin-role.entity';
-import type { Agency } from '../../agency/entities/agency.entity';
 
 @Entity('admin')
 export class Admin extends AbstractEntity {

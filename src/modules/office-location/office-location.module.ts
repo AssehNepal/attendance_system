@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OfficeLocationService } from './office-location.service';
-import { OfficeLocationController } from './office-location.controller';
-import { OfficeLocationNatsController } from './office-location-nats.controller';
+
 import { OfficeLocation } from './entities/office-location.entity';
+import { OfficeLocationController } from './office-location.controller';
+import { OfficeLocationService } from './office-location.service';
+import { OfficeLocationNatsController } from './office-location-nats.controller';
 
 @Module({
   imports: [

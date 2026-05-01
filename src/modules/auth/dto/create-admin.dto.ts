@@ -1,10 +1,11 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsOptional, IsUUID, Matches } from 'class-validator';
+
 import {
   EmailField,
   StringField,
   StringFieldOptional,
 } from '../../../decorators/field.decorators.ts';
-import { IsArray, IsOptional, IsUUID, Matches } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAdminDto {
   @StringField({ minLength: 1 })

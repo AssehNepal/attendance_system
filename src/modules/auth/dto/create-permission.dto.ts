@@ -1,8 +1,9 @@
+import { IsArray, IsEnum } from 'class-validator';
+
 import {
   StringField,
   StringFieldOptional,
 } from '../../../decorators/field.decorators.ts';
-import { IsArray, IsEnum } from 'class-validator';
 import {
   PermissionAction,
   PermissionSubject,

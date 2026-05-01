@@ -1,27 +1,28 @@
 import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
   BadRequestException,
+  ConflictException,
   Inject,
+  Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { timeout, catchError, firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, timeout } from 'rxjs';
+import { DataSource, Repository } from 'typeorm';
+
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
+import { OFFICE_LOCATION_EVENTS } from '../../constants/nats-patterns';
 import { CreateOfficeLocationDto } from './dto/create-office-location.dto';
-import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
 import { QueryOfficeLocationDto } from './dto/query-office-location.dto';
+import { UpdateOfficeLocationDto } from './dto/update-office-location.dto';
 // import { FilterOfficeLocationDto } from './dto/filter-office-location.dto';
 import { OfficeLocation } from './entities/office-location.entity';
-import { OFFICE_LOCATION_EVENTS } from '../../constants/nats-patterns';
 import {
   OfficeLocationCreatedEvent,
-  OfficeLocationUpdatedEvent,
   OfficeLocationDeletedEvent,
+  OfficeLocationUpdatedEvent,
 } from './events';
 
 @Injectable()
@@ -81,7 +82,7 @@ export class OfficeLocationService {
       // 6. Send to common_service and WAIT for response (with 10s timeout)
       const response = await firstValueFrom(
         this.natsClient.send(OFFICE_LOCATION_EVENTS.CREATED, event).pipe(
-          timeout(10000), // 10 second timeout
+          timeout(10_000), // 10 second timeout
           catchError((error) => {
             throw new InternalServerErrorException(
               `Failed to sync with common_service: ${error.message}`,
@@ -217,7 +218,7 @@ export class OfficeLocationService {
       // Send to common_service and WAIT for response (with 10s timeout)
       const response = await firstValueFrom(
         this.natsClient.send(OFFICE_LOCATION_EVENTS.UPDATED, event).pipe(
-          timeout(10000), // 10 second timeout
+          timeout(10_000), // 10 second timeout
           catchError((error) => {
             throw new InternalServerErrorException(
               `Failed to sync update with common_service: ${error.message}`,
@@ -267,7 +268,7 @@ export class OfficeLocationService {
       // Send to common_service and WAIT for response (with 10s timeout)
       const response = await firstValueFrom(
         this.natsClient.send(OFFICE_LOCATION_EVENTS.DELETED, event).pipe(
-          timeout(10000), // 10 second timeout
+          timeout(10_000), // 10 second timeout
           catchError((error) => {
             throw new InternalServerErrorException(
               `Failed to sync deletion with common_service: ${error.message}`,
