@@ -1,16 +1,16 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
 
-import { Admin } from './entities/admin.entity';
+import type { PageOptionsDto } from '../../common/dto/page-options.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import type { PageOptionsDto } from '../../common/dto/page-options.dto';
+import { Admin } from './entities/admin.entity';
 
 @Injectable()
 export class AdminsService {
