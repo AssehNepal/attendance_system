@@ -1,41 +1,36 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 
-import { AbstractEntity } from '../../../common/abstract.entity.ts';
-import { UseDto } from '../../../decorators/use-dto.decorator.ts';
-import type { User } from '../../users/entities/user.entity.ts';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
-import type { Admin } from './admin.entity.ts';
+import { AbstractEntity } from '../../../common/abstract.entity';
 
-@Entity({ name: 'refresh_tokens' })
-@UseDto(RefreshTokenDto)
-export class RefreshToken extends AbstractEntity<RefreshTokenDto> {
-  @Column({ type: 'text', name: 'token' })
-  @Index()
+@Entity('refresh_tokens')
+export class RefreshToken extends AbstractEntity {
+  @Column({ type: 'text' })
+  @Index('idx_refresh_token')
   token!: string;
 
-  @Column({ nullable: true, type: 'uuid', name: 'user_id' })
-  userId!: string | null;
+  @Column({ type: 'uuid', nullable: true, name: 'admin_id' })
+  adminId?: Uuid;
 
-  @Column({ nullable: true, type: 'uuid', name: 'admin_id' })
-  adminId!: string | null;
+  @Column({ type: 'uuid', nullable: true, name: 'staff_id' })
+  staffId?: Uuid;
 
-  @Column({ type: 'timestamp', name: 'expires_at' })
+  @Column({ type: 'timestamptz', name: 'expires_at' })
   expiresAt!: Date;
 
   @Column({ type: 'boolean', default: false, name: 'is_revoked' })
   isRevoked!: boolean;
 
-  @Column({ nullable: true, type: 'varchar', length: 45, name: 'ip_address' })
-  ipAddress!: string | null;
+  @Column({ type: 'varchar', length: 45, nullable: true, name: 'ip_address' })
+  ipAddress?: string;
 
-  @Column({ nullable: true, type: 'text', name: 'user_agent' })
-  userAgent!: string | null;
+  @Column({ type: 'text', nullable: true, name: 'user_agent' })
+  userAgent?: string;
 
-  @ManyToOne('User', { nullable: true })
-  @JoinColumn({ name: 'user_id' })
-  user?: User | null;
-
-  @ManyToOne('Admin', { nullable: true })
+  @ManyToOne('Admin', { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'admin_id' })
-  admin?: Admin | null;
+  admin?: any;
+
+  @ManyToOne('Staff', { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'staff_id' })
+  staff?: any;
 }

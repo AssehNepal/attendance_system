@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { SnakeNamingStrategy } from '../../snake-naming.strategy.ts';
+import { SnakeNamingStrategy } from '../../snake-naming.strategy';
 
 @Injectable()
 export class ApiConfigService {
@@ -59,13 +59,6 @@ export class ApiConfigService {
     return value.toString().replaceAll(String.raw`\n`, '\n');
   }
 
-  get commonServiceTcpOptions() {
-    return {
-      host: this.getString('COMMON_SERVICE_TCP_HOST'),
-      port: this.getNumber('COMMON_SERVICE_TCP_PORT'),
-    };
-  }
-
   get nodeEnv(): string {
     return this.getString('NODE_ENV');
   }
@@ -81,33 +74,14 @@ export class ApiConfigService {
       password: this.getString('DB_PASSWORD'),
       database: this.getString('DB_DATABASE'),
       subscribers: [],
-      migrationsRun: false, // Disable migrations for now
+      migrationsRun: false,
       logging: this.getBoolean('ENABLE_ORM_LOGS'),
       namingStrategy: new SnakeNamingStrategy(),
     };
   }
 
-  get awsS3Config() {
-    return {
-      bucketRegion: this.getString('AWS_S3_BUCKET_REGION'),
-      bucketApiVersion: this.getString('AWS_S3_API_VERSION'),
-      bucketName: this.getString('AWS_S3_BUCKET_NAME'),
-    };
-  }
-
   get documentationEnabled(): boolean {
     return this.getBoolean('ENABLE_DOCUMENTATION');
-  }
-
-  get natsEnabled(): boolean {
-    return this.getBoolean('NATS_ENABLED');
-  }
-
-  get natsConfig() {
-    return {
-      host: this.getString('NATS_HOST'),
-      port: this.getNumber('NATS_PORT'),
-    };
   }
 
   get authConfig() {
@@ -142,17 +116,23 @@ export class ApiConfigService {
     };
   }
 
-  // NATS Event Patterns - Listening from Common Service for Reverse Sync
-  get officeLocationSyncFromCommonCreatedPattern(): string {
-    return 'office_location.sync_to_auth.created';
+  get redisConfig() {
+    return {
+      enabled: this.getBoolean('REDIS_CACHE_ENABLED'),
+      host: this.getString('REDIS_HOST'),
+      port: this.getNumber('REDIS_PORT'),
+    };
   }
 
-  get officeLocationSyncFromCommonUpdatedPattern(): string {
-    return 'office_location.sync_to_auth.updated';
-  }
-
-  get officeLocationSyncFromCommonDeletedPattern(): string {
-    return 'office_location.sync_to_auth.deleted';
+  get awsS3Config() {
+    return {
+      accessKeyId: this.getString('ACCESS_KEY_ID'),
+      secretAccessKey: this.getString('SECRET_ACCESS_KEY'),
+      bucketEndpoint: this.getString('AWS_S3_BUCKET_ENDPOINT'),
+      bucketName: this.getString('AWS_S3_BUCKET_NAME'),
+      bucketRegion: this.getString('AWS_S3_BUCKET_REGION'),
+      usePathStyleEndpoint: this.getBoolean('AWS_USE_PATH_STYLE_ENDPOINT'),
+    };
   }
 
   private get(key: string): string {

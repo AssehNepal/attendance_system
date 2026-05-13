@@ -4,85 +4,79 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
 
-import { TokenType } from '../../constants/token-type.ts';
-import { ApiConfigService } from '../../shared/services/api-config.service.ts';
-import { UsersService } from '../users/users.service.ts';
-import { Admin } from './entities/admin.entity.ts';
+import { TokenType } from '../../constants/token-type';
+import { ApiConfigService } from '../../shared/services/api-config.service';
+import { Admin } from '../admins/entities/admin.entity';
+import { Staff } from '../staff/entities/staff.entity';
 
 interface JwtPayload {
-  userId: Uuid;
-  cidNo: string;
-  roleType: 'CITIZEN' | 'ADMIN' | 'SUPER_ADMIN';
+  sub: Uuid;
+  email: string;
+  userType: 'admin' | 'super_admin' | 'staff';
   type: TokenType;
-  roles?: string[];
-  permissions?: Array<{ actions: string[]; subjects: string[] }>;
-  officeLocationId?: Uuid;
+  officeId?: Uuid;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ApiConfigService,
-    private usersService: UsersService,
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
+    @InjectRepository(Staff)
+    private readonly staffRepository: Repository<Staff>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: configService.authConfig.publicKey,
+      secretOrKey: configService.authConfig.privateKey,
+      algorithms: ['HS256'],
     });
   }
 
   async validate(payload: JwtPayload): Promise<any> {
-    // Verify token type
     if (payload.type !== TokenType.ACCESS_TOKEN) {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    // Handle CITIZEN users
-    if (payload.roleType === 'CITIZEN') {
-      const user = await this.usersService.findOne(payload.userId);
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-      return {
-        ...user,
-        roleType: 'CITIZEN',
-      };
-    }
-
-    // Handle ADMIN and SUPER_ADMIN users
-    if (payload.roleType === 'ADMIN' || payload.roleType === 'SUPER_ADMIN') {
+    if (payload.userType === 'admin' || payload.userType === 'super_admin') {
       const admin = await this.adminRepository.findOne({
-        where: { id: payload.userId },
-        relations: ['officeLocation', 'agency'],
+        where: { id: payload.sub },
       });
 
-      if (!admin) {
-        throw new UnauthorizedException('Admin not found');
+      if (!admin || !admin.isActive) {
+        throw new UnauthorizedException('Admin not found or deactivated');
       }
-
-      // Build ability array from permissions
-      const ability = payload.permissions
-        ? payload.permissions.map((perm) => ({
-            action: perm.actions.length === 1 ? perm.actions[0] : perm.actions,
-            subject:
-              perm.subjects.length === 1 ? perm.subjects[0] : perm.subjects,
-          }))
-        : [];
 
       return {
         id: admin.id,
-        cidNo: admin.cidNo,
-        roleType: payload.roleType,
-        roles: payload.roles || [],
-        ability, // This is used by PermissionsGuard
-        officeLocationId: payload.officeLocationId,
-        officeLocation: admin.officeLocation,
-        agency: admin.agency,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role,
+        officeId: admin.officeId,
+        userType: admin.role,
       };
     }
 
-    throw new UnauthorizedException('Invalid role type');
+    if (payload.userType === 'staff') {
+      const staff = await this.staffRepository.findOne({
+        where: { id: payload.sub },
+      });
+
+      if (!staff || !staff.isActive) {
+        throw new UnauthorizedException('Staff not found or deactivated');
+      }
+
+      return {
+        id: staff.id,
+        email: staff.email,
+        name: staff.name,
+        employeeId: staff.employeeId,
+        officeId: staff.officeId,
+        departmentId: staff.departmentId,
+        userType: 'staff',
+      };
+    }
+
+    throw new UnauthorizedException('Invalid token');
   }
 }

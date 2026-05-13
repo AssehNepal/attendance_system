@@ -8,11 +8,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 
-import { validateHash } from '../../common/utils';
 import { ApiConfigService } from '../../shared/services/api-config.service';
 import { EmailService } from '../../shared/services/email.service';
 import { GeneratorService } from '../../shared/services/generator.service';
-import { Admin } from '../admin/entities/admin.entity';
+import { Admin } from '../admins/entities/admin.entity';
 import { CreateForgotPasswordDto } from './dto/create-forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { PasswordResetOtp } from './entities/password-reset-otp.entity';
@@ -32,34 +31,19 @@ export class ForgotPasswordService {
   ) {}
 
   async sendOtp(dto: CreateForgotPasswordDto) {
-    const { cidNo, email, mobileNo } = dto;
+    const { email } = dto;
 
-    if (!cidNo && !email && !mobileNo) {
-      throw new BadRequestException(
-        'At least one identifier (CID, Email, or Mobile No) must be provided',
-      );
+    if (!email) {
+      throw new BadRequestException('Email must be provided');
     }
 
     const admin = await this.adminRepository.findOne({
-      where: [
-        ...(cidNo ? [{ cidNo }] : []),
-        ...(email ? [{ email }] : []),
-        ...(mobileNo ? [{ mobileNo }] : []),
-      ],
+      where: { email },
     });
 
     if (!admin) {
-      this.logger.warn(
-        `OTP requested for non-existent admin: ${cidNo || email || mobileNo}`,
-      );
+      this.logger.warn(`OTP requested for non-existent admin: ${email}`);
       throw new NotFoundException('Admin not found');
-    }
-
-    const targetEmail = email || admin.email;
-    if (!targetEmail) {
-      throw new BadRequestException(
-        'Admin does not have an email address configured',
-      );
     }
 
     const rawOtp = this.generatorService.generateSixDigitToken();
@@ -68,110 +52,57 @@ export class ForgotPasswordService {
     const expiryMinutes = this.configService.otpConfig.expirationMinutes;
     const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-    // Clean up old OTPs for this admin
     await this.otpRepository.delete({ adminId: admin.id });
 
-    // Save new OTP with provided details
     await this.otpRepository.save({
       adminId: admin.id,
       otp: hashedOtp,
       expiresAt,
-      email: email || admin.email,
-      mobileNo: mobileNo || admin.mobileNo,
+      email: admin.email,
     });
 
-    // Send email
-    await this.emailService.sendPasswordResetToken(targetEmail, rawOtp);
+    await this.emailService.sendPasswordResetToken(admin.email, rawOtp);
 
-    return {
-      message: 'Password reset OTP has been sent to your email',
-    };
+    return { message: 'OTP sent successfully' };
   }
 
-  async verifyOtp(cidOrEmailOrMobile: string, otp: string) {
+  async verifyOtpAndResetPassword(dto: ResetPasswordDto) {
+    const { email, otp, newPassword } = dto;
+
     const admin = await this.adminRepository.findOne({
-      where: [
-        { cidNo: cidOrEmailOrMobile },
-        { email: cidOrEmailOrMobile },
-        { mobileNo: cidOrEmailOrMobile },
-      ],
+      where: { email },
     });
 
     if (!admin) {
       throw new NotFoundException('Admin not found');
     }
 
-    const otpEntity = await this.otpRepository.findOne({
+    const otpRecord = await this.otpRepository.findOne({
       where: { adminId: admin.id },
+      order: { createdAt: 'DESC' },
     });
 
-    if (!otpEntity) {
-      throw new BadRequestException('No OTP found');
+    if (!otpRecord) {
+      throw new BadRequestException('No OTP found. Please request a new one.');
     }
 
-    if (otpEntity.expiresAt < new Date()) {
-      await this.otpRepository.remove(otpEntity);
-      throw new BadRequestException('OTP has expired');
+    if (otpRecord.expiresAt < new Date()) {
+      throw new BadRequestException(
+        'OTP has expired. Please request a new one.',
+      );
     }
 
-    const isValid = await validateHash(otp, otpEntity.otp);
+    const isValid = bcrypt.compareSync(otp, otpRecord.otp);
+
     if (!isValid) {
       throw new BadRequestException('Invalid OTP');
     }
 
-    return {
-      message: 'OTP verified successfully',
-      valid: true,
-    };
-  }
-
-  async resetPassword(otp: string, dto: ResetPasswordDto) {
-    const { cidOrEmailOrMobile, newPassword, confirmPassword } = dto;
-
-    if (newPassword !== confirmPassword) {
-      throw new BadRequestException('Passwords do not match');
-    }
-
-    const admin = await this.adminRepository.findOne({
-      where: [
-        { cidNo: cidOrEmailOrMobile },
-        { email: cidOrEmailOrMobile },
-        { mobileNo: cidOrEmailOrMobile },
-      ],
-    });
-
-    if (!admin) {
-      throw new NotFoundException('Admin not found');
-    }
-
-    const otpEntity = await this.otpRepository.findOne({
-      where: { adminId: admin.id },
-    });
-
-    if (!otpEntity) {
-      throw new BadRequestException('No OTP found');
-    }
-
-    if (otpEntity.expiresAt < new Date()) {
-      await this.otpRepository.remove(otpEntity);
-      throw new BadRequestException('OTP has expired');
-    }
-
-    const isValid = await validateHash(otp, otpEntity.otp);
-    if (!isValid) {
-      throw new BadRequestException('Invalid OTP');
-    }
-
-    // Update password
-    const hashedPassword = bcrypt.hashSync(newPassword, 12);
-    admin.password = hashedPassword;
+    admin.passwordHash = await bcrypt.hash(newPassword, 10);
     await this.adminRepository.save(admin);
 
-    // Clean up OTP
-    await this.otpRepository.remove(otpEntity);
+    await this.otpRepository.delete({ adminId: admin.id });
 
-    return {
-      message: 'Password has been reset successfully',
-    };
+    return { message: 'Password reset successfully' };
   }
 }

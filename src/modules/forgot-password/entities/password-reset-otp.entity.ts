@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
 import { AbstractEntity } from '../../../common/abstract.entity';
-import { Admin } from '../../admin/entities/admin.entity';
+import { Admin } from '../../admins/entities/admin.entity';
 
 @Entity('password_reset_otps')
 export class PasswordResetOtp extends AbstractEntity {

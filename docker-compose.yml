@@ -1,58 +1,79 @@
+networks:
+  attendance_network:
+    driver: bridge
+
 services:
-  common:
-    env_file:
-      - .env
-    container_name: census_backend
+  app:
+    container_name: attendance_backend
     restart: always
     build: .
+    env_file:
+      - .env
     ports:
-      - '$PORT:$PORT'
-    links:
-      - postgres
+      - '${PORT:-3001}:${PORT:-3001}'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - attendance_network
+
   postgres:
     image: postgres:15
-    container_name: census_postgres
+    container_name: attendance_postgres
     restart: always
     environment:
-      DB_DATABASE: '${DB_DATABASE}'
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: census@123
+      POSTGRES_DB: '${DB_DATABASE}'
+      POSTGRES_USER: '${DB_USERNAME:-postgres}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-attendance@123}'
       TZ: 'GMT'
       PGTZ: 'GMT'
     ports:
-      - '5433:5432'
-    expose:
-      - '5433'
+      - '5434:5432'
     env_file:
       - .env
     volumes:
-      - census_auth_postgres_data:/var/lib/postgresql/data
+      - attendance_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - attendance_network
 
   pgadmin:
-    container_name: census_pgadmin
+    container_name: attendance_pgadmin
     image: dpage/pgadmin4
+    restart: always
     ports:
-      - '8081:80'
+      - '8082:80'
     volumes:
-      - ~/census-pgladmin-data:/var/lib/pgadmin
+      - ~/attendance_pgadmin_data:/var/lib/pgadmin
     env_file:
       - .env
-    links:
+    depends_on:
       - postgres
+    networks:
+      - attendance_network
 
-  redis-server:
+  redis:
     image: redis:alpine
-    container_name: census_redis
+    container_name: attendance_redis
+    restart: always
     ports:
-      - '6380:6379'
+      - '6381:6379'
     volumes:
-      - ~/census-redis-service/config/redis.conf:/usr/local/etc/redis/redis.conf
-      - redis_data:/data
-    command:
-      ['redis-server', '/usr/local/etc/redis/redis.conf', '--appendonly', 'yes']
+      - attendance_redis_data:/data
+    command: ['redis-server', '--appendonly', 'yes']
+    networks:
+      - attendance_network
 
 volumes:
-  census_auth_postgres_data:
+  attendance_postgres_data:
     driver: local
-  redis_data:
+  attendance_pgadmin_data:
+    driver: local
+  attendance_redis_data:
     driver: local

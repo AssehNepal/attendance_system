@@ -9,22 +9,18 @@ import {
 import type { Type } from '@nestjs/common/interfaces';
 import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
-import type { RoleType } from '../constants/role-type.ts';
 import { AuthGuard } from '../guards/auth.guard.ts';
-import { RolesGuard } from '../guards/roles.guard.ts';
 import { AuthUserInterceptor } from '../interceptors/auth-user-interceptor.service.ts';
 import { PublicRoute } from './public-route.decorator.ts';
-import { Roles } from './roles.decorator.ts';
 
 export function Auth(
-  roles: RoleType[] = [],
+  _roles: string[] = [],
   options?: Partial<{ public: boolean }>,
 ): MethodDecorator {
   const isPublicRoute = options?.public;
 
   return applyDecorators(
-    Roles(roles),
-    UseGuards(AuthGuard({ public: isPublicRoute }), RolesGuard),
+    UseGuards(AuthGuard({ public: isPublicRoute })),
     ApiBearerAuth(),
     UseInterceptors(AuthUserInterceptor),
     ApiUnauthorizedResponse({ description: 'Unauthorized' }),

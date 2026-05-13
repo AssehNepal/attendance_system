@@ -25,7 +25,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { supportedLanguageCount } from '../constants/language-code';
 import type { Constructor } from '../types';
 import { ApiEnumProperty, ApiUUIDProperty } from './property.decorators';
 import {
@@ -259,8 +258,8 @@ export function TranslationsField(
     IFieldOptions,
 ): PropertyDecorator {
   const decorators = [
-    ArrayMinSize(supportedLanguageCount),
-    ArrayMaxSize(supportedLanguageCount),
+    ArrayMinSize(1),
+    ArrayMaxSize(10),
     ValidateNested({
       each: true,
     }),

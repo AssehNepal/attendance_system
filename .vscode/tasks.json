@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "watch:dev",
+      "type": "shell",
+      "command": "yarn watch:dev",
+      "isBackground": true,
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}

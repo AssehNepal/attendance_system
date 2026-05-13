@@ -1,7 +1,6 @@
 import type { Provider } from '@nestjs/common';
 import { Global, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { MailerModule } from '@nestjs-modules/mailer';
 
 import { ApiConfigService } from './services/api-config.service.ts';
@@ -16,42 +15,6 @@ const providers: Provider[] = [
   AwsS3Service,
   GeneratorService,
   EmailService,
-  {
-    provide: 'NATS_SERVICE',
-    useFactory: (configService: ApiConfigService) => {
-      const natsConfig = configService.natsConfig;
-
-      try {
-        return ClientProxyFactory.create({
-          transport: Transport.NATS,
-          options: {
-            name: 'NATS_SERVICE',
-            servers: [`nats://${natsConfig.host}:${natsConfig.port}`],
-          },
-        });
-      } catch (error) {
-        console.error('Failed to create NATS client:', error);
-
-        throw error;
-      }
-    },
-    inject: [ApiConfigService],
-  },
-  {
-    provide: 'COMMON_SERVICE',
-    useFactory: (configService: ApiConfigService) => {
-      const commonServiceTcpOptions = configService.commonServiceTcpOptions;
-
-      return ClientProxyFactory.create({
-        transport: Transport.TCP,
-        options: {
-          host: commonServiceTcpOptions.host,
-          port: commonServiceTcpOptions.port,
-        },
-      });
-    },
-    inject: [ApiConfigService],
-  },
 ];
 
 @Global()
@@ -65,7 +28,7 @@ const providers: Provider[] = [
         transport: {
           host: configService.emailConfig.host,
           port: configService.emailConfig.port,
-          secure: true, // Use port 465
+          secure: true,
           auth: {
             user: configService.emailConfig.username,
             pass: configService.emailConfig.password,

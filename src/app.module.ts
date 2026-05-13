@@ -9,33 +9,23 @@ import {
   getDataSourceByName,
 } from 'typeorm-transactional';
 
-import { AdminModule } from './modules/admin/admin.module.ts';
-import { AdminRoleModule } from './modules/admin-role/admin-role.module.ts';
-import { AgencyModule } from './modules/agency/agency.module.ts';
-import { AuthModule } from './modules/auth/auth.module.ts';
+import { AdminOverridesModule } from './modules/admin-overrides/admin-overrides.module';
+import { AdminsModule } from './modules/admins/admins.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
 import { ForgotPasswordModule } from './modules/forgot-password/forgot-password.module';
-import { HealthCheckerModule } from './modules/health-checker/health-checker.module.ts';
-import { OfficeLocationModule } from './modules/office-location/office-location.module.ts';
-import { PermissionsModule } from './modules/permissions/permissions.module.ts';
-import { RolePermissionModule } from './modules/role-permission/role-permission.module.ts';
-import { RolesModule } from './modules/roles/roles.module.ts';
-import { UsersModule } from './modules/users/users.module.ts';
-import { ApiConfigService } from './shared/services/api-config.service.ts';
-import { SharedModule } from './shared/shared.module.ts';
+import { HealthCheckerModule } from './modules/health-checker/health-checker.module';
+import { HolidaysModule } from './modules/holidays/holidays.module';
+import { OfficesModule } from './modules/offices/offices.module';
+import { StaffModule } from './modules/staff/staff.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+import { ApiConfigService } from './shared/services/api-config.service';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
     EventEmitterModule.forRoot(),
-    AuthModule,
-    ForgotPasswordModule,
-    UsersModule,
-    AdminModule,
-    RolesModule,
-    PermissionsModule,
-    OfficeLocationModule,
-    AgencyModule,
-    AdminRoleModule,
-    RolePermissionModule,
     ClsModule.forRoot({
       global: true,
       middleware: {
@@ -56,7 +46,6 @@ import { SharedModule } from './shared/shared.module.ts';
           throw new Error('Invalid options passed');
         }
 
-        // Check if DataSource already exists to avoid duplication when microservice initializes
         try {
           const existingDataSource = getDataSourceByName('default');
           if (existingDataSource) {
@@ -69,6 +58,16 @@ import { SharedModule } from './shared/shared.module.ts';
         return addTransactionalDataSource(new DataSource(options));
       },
     }),
+    AuthModule,
+    AdminsModule,
+    OfficesModule,
+    DepartmentsModule,
+    StaffModule,
+    AttendanceModule,
+    HolidaysModule,
+    AdminOverridesModule,
+    SystemSettingsModule,
+    ForgotPasswordModule,
     HealthCheckerModule,
   ],
   providers: [],

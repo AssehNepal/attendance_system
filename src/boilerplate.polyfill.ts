@@ -4,11 +4,9 @@ import { Brackets, SelectQueryBuilder } from 'typeorm';
 
 import type { AbstractEntity } from './common/abstract.entity';
 import type { AbstractDto } from './common/dto/abstract.dto';
-import type { CreateTranslationDto } from './common/dto/create-translation.dto';
 import { PageDto } from './common/dto/page.dto.ts';
 import { PageMetaDto } from './common/dto/page-meta.dto.ts';
 import type { PageOptionsDto } from './common/dto/page-options.dto';
-import type { LanguageCode } from './constants/language-code';
 import type { KeyOfType } from './types';
 
 declare global {
@@ -18,11 +16,6 @@ declare global {
 
   interface Array<T> {
     toDtos<Dto extends AbstractDto>(this: T[], options?: unknown): Dto[];
-
-    getByLanguage(
-      this: CreateTranslationDto[],
-      languageCode: LanguageCode,
-    ): string;
 
     toPageDto<Dto extends AbstractDto>(
       this: T[],
@@ -104,11 +97,6 @@ Array.prototype.toDtos = function <
       item.toDto(options as never),
     ),
   );
-};
-
-Array.prototype.getByLanguage = function (languageCode: LanguageCode): string {
-  return this.find((translation) => languageCode === translation.languageCode)!
-    .text;
 };
 
 Array.prototype.toPageDto = function (

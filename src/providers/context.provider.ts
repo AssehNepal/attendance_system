@@ -1,6 +1,6 @@
 import { ClsServiceManager } from 'nestjs-cls';
 
-import type { UserEntity } from '../modules/users/entities/user.entity.ts';
+import type { Admin } from '../modules/admins/entities/admin.entity';
 
 export class ContextProvider {
   private static readonly nameSpace = 'request';
@@ -23,11 +23,11 @@ export class ContextProvider {
     return `${ContextProvider.nameSpace}.${key}`;
   }
 
-  static setAuthUser(user: UserEntity): void {
+  static setAuthUser(user: Admin): void {
     ContextProvider.set(ContextProvider.authUserKey, user);
   }
 
-  static getAuthUser(): UserEntity | undefined {
-    return ContextProvider.get<UserEntity>(ContextProvider.authUserKey);
+  static getAuthUser(): Admin | undefined {
+    return ContextProvider.get<Admin>(ContextProvider.authUserKey);
   }
 }

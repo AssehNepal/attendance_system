@@ -1,267 +1,194 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
   Req,
-  Res,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Request, Response } from 'express';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
+import type { Request } from 'express';
 
 import { PublicRoute } from '../../decorators/public-route.decorator';
-import type { LoginResponse } from './auth.service';
 import { AuthService } from './auth.service';
-import { AdminLoginDto } from './dto/admin-login.dto';
-import { CreateProofRequestDto } from './dto/create-proof-request.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
-import { NdiService } from './ndi.service';
+
+class AdminLoginDto {
+  @ApiProperty({ example: 'admin@example.com', description: 'Admin email' })
+  @IsString()
+  @IsNotEmpty()
+  email!: string;
+
+  @ApiProperty({ example: 'P@ssw0rd123', description: 'Admin password' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}
+
+class StaffLoginDto {
+  @ApiProperty({ example: 'EMP-001', description: 'Staff employee ID' })
+  @IsString()
+  @IsNotEmpty()
+  employeeId!: string;
+
+  @ApiProperty({ example: 'P@ssw0rd123', description: 'Staff password' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}
+
+class RefreshTokenRequestDto {
+  @ApiProperty({
+    example: 'a1b2c3d4e5f6...hex-encoded-refresh-token',
+    description: 'Refresh token received from login',
+  })
+  @IsString()
+  @IsNotEmpty()
+  refreshToken!: string;
+}
+
+class UserResponseDto {
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' })
+  id!: string;
+
+  @ApiProperty({ example: 'John Doe' })
+  name!: string;
+
+  @ApiProperty({ example: 'admin@example.com', required: false })
+  email?: string;
+
+  @ApiProperty({ example: 'super_admin' })
+  role!: string;
+
+  @ApiProperty({
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    required: false,
+  })
+  officeId?: string;
+
+  @ApiProperty({ example: 'EMP-001', required: false })
+  employeeId?: string;
+
+  @ApiProperty({
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    required: false,
+  })
+  departmentId?: string;
+}
+
+class LoginResponseDto {
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  accessToken!: string;
+
+  @ApiProperty({ example: 'a1b2c3d4e5f6...hex-encoded-refresh-token' })
+  refreshToken!: string;
+
+  @ApiProperty({ example: 3600 })
+  expiresIn!: number;
+
+  @ApiProperty({ example: 'Bearer' })
+  tokenType!: string;
+
+  @ApiProperty({ type: UserResponseDto })
+  user!: UserResponseDto;
+}
+
+class RefreshResponseDto {
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
+  accessToken!: string;
+
+  @ApiProperty({ example: 'a1b2c3d4e5f6...hex-encoded-refresh-token' })
+  refreshToken!: string;
+
+  @ApiProperty({ example: 3600 })
+  expiresIn!: number;
+
+  @ApiProperty({ example: 'Bearer' })
+  tokenType!: string;
+}
+
+class LogoutResponseDto {
+  @ApiProperty({ example: 'Logged out successfully' })
+  message!: string;
+}
 
 @Controller('auth')
-@ApiTags('auth')
+@ApiTags('Auth')
 export class AuthController {
-  constructor(
-    private authService: AuthService,
-    private ndiService: NdiService,
-    private eventEmitter: EventEmitter2,
-  ) {}
-
-  @Post('ndi/user-login')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOperation({
-    summary: 'Create NDI Proof Request - Returns QR Code and Deep Link',
-    description:
-      'Initiates NDI verification flow. User scans QR code or clicks deep link to approve in NDI app. Response will be logged in terminal once user approves.',
-  })
-  @ApiBody({
-    type: CreateProofRequestDto,
-    required: false,
-    description:
-      'Optional request body. If not provided, defaults will be used.',
-    examples: {
-      census: {
-        summary: 'Census Identity Verification (Recommended)',
-        value: {
-          proofName: 'Verify Identity for Census',
-          purpose: 'login',
-          attributes: ['ID Number', 'Full Name', 'Date of Birth', 'Gender'],
-        },
-      },
-      basic: {
-        summary: 'Basic Verification',
-        value: {
-          proofName: 'Verify Foundational ID',
-          purpose: 'login',
-          attributes: ['ID Number', 'Full Name'],
-        },
-      },
-      empty: {
-        summary: 'Use Defaults (Empty body)',
-        value: {},
-      },
-    },
-  })
-  @ApiOkResponse({
-    description:
-      'Proof request created successfully. Contains thread ID, deep link for mobile, QR code URL, and access token for subsequent API calls.',
-    schema: {
-      example: {
-        proofRequestThreadId: 'abc123-def456-ghi789',
-        deepLinkURL: 'bhutanndi://proof-request?threadId=abc123',
-        proofRequestURL: 'https://staging.bhutanndi.com/qr/abc123',
-        accessToken: 'eyJraWQiOiJzd3hhdGVQK1...',
-        tokenType: 'Bearer',
-      },
-    },
-  })
-  async createNdiProofRequest(
-    @Body() createProofRequestDto: CreateProofRequestDto,
-  ): Promise<{
-    proofRequestThreadId: string;
-    deepLinkURL: string;
-    proofRequestURL: string;
-    accessToken: string;
-    tokenType: string;
-  }> {
-    return this.ndiService.createProofRequest(createProofRequestDto);
-  }
-
-  @Post('ndi/admin-login')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOperation({
-    summary: 'Admin NDI Login',
-    description:
-      'Initiates NDI verification flow for administrators. Only existing admins can log in.',
-  })
-  async createAdminNdiProofRequest(
-    @Body() createProofRequestDto: CreateProofRequestDto,
-  ): Promise<{
-    proofRequestThreadId: string;
-    deepLinkURL: string;
-    proofRequestURL: string;
-    accessToken: string;
-    tokenType: string;
-  }> {
-    return this.ndiService.createProofRequest(createProofRequestDto, 'ADMIN');
-  }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('admin/login')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
-  @ApiOkResponse({
-    type: LoginResponseDto,
-    description: 'Admin/Super Admin login - requires pre-registration',
+  @ApiOperation({ summary: 'Admin login with email & password' })
+  @ApiBody({ type: AdminLoginDto })
+  @ApiOkResponse({ type: LoginResponseDto, description: 'Login successful' })
+  @ApiUnauthorizedResponse({ description: 'Invalid email or password' })
+  async adminLogin(@Body() dto: AdminLoginDto, @Req() req: Request) {
+    return this.authService.adminLogin(
+      dto.email,
+      dto.password,
+      req.ip,
+      req.headers['user-agent'],
+    );
+  }
+
+  @Post('staff/login')
+  @HttpCode(HttpStatus.OK)
+  @PublicRoute()
+  @ApiOperation({ summary: 'Staff login with employee ID & password' })
+  @ApiBody({ type: StaffLoginDto })
+  @ApiOkResponse({ type: LoginResponseDto, description: 'Login successful' })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid employee ID or password',
   })
-  async adminLogin(
-    @Body() adminLoginDto: AdminLoginDto,
-    @Req() req: Request,
-  ): Promise<LoginResponse> {
-    const ipAddress = this.getClientIp(req);
-    const userAgent = req.headers['user-agent'] as string;
-    return this.authService.loginAdmin(adminLoginDto, ipAddress, userAgent);
+  async staffLogin(@Body() dto: StaffLoginDto, @Req() req: Request) {
+    return this.authService.staffLogin(
+      dto.employeeId,
+      dto.password,
+      req.ip,
+      req.headers['user-agent'],
+    );
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiBody({ type: RefreshTokenRequestDto })
   @ApiOkResponse({
-    description:
-      'Refresh access token using refresh token (with automatic rotation)',
+    type: RefreshResponseDto,
+    description: 'Token refreshed successfully',
   })
-  async refreshToken(
-    @Body('refreshToken') refreshToken: string,
-    @Req() req: Request,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const ipAddress = this.getClientIp(req);
-    const userAgent = req.headers['user-agent'] as string;
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or expired refresh token',
+  })
+  async refresh(@Body() dto: RefreshTokenRequestDto, @Req() req: Request) {
     return this.authService.refreshAccessToken(
-      refreshToken,
-      ipAddress,
-      userAgent,
+      dto.refreshToken,
+      req.ip,
+      req.headers['user-agent'],
     );
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @PublicRoute()
+  @ApiOperation({ summary: 'Revoke refresh token' })
+  @ApiBody({ type: RefreshTokenRequestDto })
   @ApiOkResponse({
-    description: 'Logout (revoke refresh token)',
+    type: LogoutResponseDto,
+    description: 'Logged out successfully',
   })
-  async logout(
-    @Body('refreshToken') refreshToken: string,
-  ): Promise<{ message: string }> {
-    await this.authService.logout(refreshToken);
+  async logout(@Body() dto: RefreshTokenRequestDto) {
+    await this.authService.revokeRefreshToken(dto.refreshToken);
+
     return { message: 'Logged out successfully' };
-  }
-
-  @Get('ndi/health')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOperation({ summary: 'Check NDI service health status' })
-  @ApiOkResponse({
-    description: 'Returns NDI service health status',
-  })
-  async ndiHealthCheck(): Promise<{
-    status: string;
-    authenticated: boolean;
-  }> {
-    return this.ndiService.healthCheck();
-  }
-
-  @Get('ndi/test-auth')
-  @HttpCode(HttpStatus.OK)
-  @PublicRoute()
-  @ApiOperation({ summary: 'Test NDI OAuth authentication only' })
-  @ApiOkResponse({
-    description: 'Returns access token info if authentication succeeds',
-  })
-  async testNdiAuth(): Promise<{
-    accessToken: string;
-    tokenType: string;
-  }> {
-    return this.ndiService.getAccessToken();
-  }
-
-  @Get('ndi/stream/:threadId')
-  @PublicRoute()
-  @ApiOperation({
-    summary: 'Stream NDI verification status via Server-Sent Events',
-  })
-  @ApiOkResponse({
-    description: 'SSE stream of verification status updates and login token',
-  })
-  streamNdiStatus(
-    @Param('threadId') threadId: string,
-    @Res() response: Response,
-  ) {
-    response.setHeader('Content-Type', 'text/event-stream');
-    response.setHeader('Cache-Control', 'no-cache, no-transform');
-    response.setHeader('Connection', 'keep-alive');
-    response.flushHeaders();
-
-    const eventName = `ndi.verification.${threadId}`;
-    console.log(
-      `🔌 [streamNdiStatus] Client connected to SSE stream for thread: ${threadId}`,
-    );
-    console.log(`🔌 [streamNdiStatus] Listening for event: ${eventName}`);
-
-    const listener = (payload: any) => {
-      console.log(
-        `📨 [streamNdiStatus] Event received for ${threadId}:`,
-        payload,
-      );
-      try {
-        response.write(`data: ${JSON.stringify(payload)}\n\n`);
-        console.log(`✅ [streamNdiStatus] Data written to response`);
-      } catch (error) {
-        console.error(`❌ [streamNdiStatus] Error writing to response:`, error);
-      }
-
-      if (
-        payload.status === 'verified' ||
-        payload.status === 'failed' ||
-        payload.status === 'rejected'
-      ) {
-        console.log(
-          `🔚 [streamNdiStatus] Ending connection for status: ${payload.status}`,
-        );
-        response.end();
-      }
-    };
-
-    this.eventEmitter.on(eventName, listener);
-
-    const interval = setInterval(() => {
-      if (!response.writableEnded) {
-        response.write(': keepalive\n\n');
-      }
-    }, 15_000);
-
-    response.on('close', () => {
-      clearInterval(interval);
-      this.eventEmitter.off(eventName, listener);
-    });
-
-    setTimeout(() => {
-      if (!response.writableEnded) {
-        response.write(`data: ${JSON.stringify({ status: 'timeout' })}\n\n`);
-        response.end();
-        this.eventEmitter.off(eventName, listener);
-      }
-    }, 300_000);
-  }
-
-  private getClientIp(req: Request): string {
-    const forwardedFor = req.headers['x-forwarded-for'];
-    if (forwardedFor && typeof forwardedFor === 'string') {
-      return forwardedFor.split(',')[0]?.trim() ?? '';
-    }
-    return req.ip ?? req.socket?.remoteAddress ?? 'unknown';
   }
 }

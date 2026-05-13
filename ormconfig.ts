@@ -1,6 +1,6 @@
 import './src/boilerplate.polyfill';
 
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 
 import { SnakeNamingStrategy } from './src/snake-naming.strategy';

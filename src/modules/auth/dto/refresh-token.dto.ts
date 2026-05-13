@@ -1,21 +1,21 @@
-import { AbstractDto } from '../../../common/dto/abstract.dto.ts';
+import { AbstractDto } from '../../../common/dto/abstract.dto';
 import {
   BooleanField,
   DateField,
   StringFieldOptional,
-  UUIDField,
-} from '../../../decorators/field.decorators.ts';
-import type { RefreshToken } from '../entities/refresh-token.entity.ts';
+  UUIDFieldOptional,
+} from '../../../decorators/field.decorators';
+import type { RefreshToken } from '../entities/refresh-token.entity';
 
 export class RefreshTokenDto extends AbstractDto {
   @StringFieldOptional()
   token!: string;
 
-  @UUIDField({ nullable: true })
-  userId!: string | null;
-
-  @UUIDField({ nullable: true })
+  @UUIDFieldOptional()
   adminId!: string | null;
+
+  @UUIDFieldOptional()
+  staffId!: string | null;
 
   @DateField()
   expiresAt!: Date;
@@ -32,11 +32,11 @@ export class RefreshTokenDto extends AbstractDto {
   constructor(refreshToken: RefreshToken) {
     super(refreshToken);
     this.token = refreshToken.token;
-    this.userId = refreshToken.userId;
-    this.adminId = refreshToken.adminId;
+    this.adminId = refreshToken.adminId ?? null;
+    this.staffId = refreshToken.staffId ?? null;
     this.expiresAt = refreshToken.expiresAt;
     this.isRevoked = refreshToken.isRevoked;
-    this.ipAddress = refreshToken.ipAddress;
-    this.userAgent = refreshToken.userAgent;
+    this.ipAddress = refreshToken.ipAddress ?? null;
+    this.userAgent = refreshToken.userAgent ?? null;
   }
 }

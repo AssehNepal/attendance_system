@@ -1,12 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -14,926 +8,234 @@ import { Repository } from 'typeorm';
 
 import { TokenType } from '../../constants/token-type';
 import { ApiConfigService } from '../../shared/services/api-config.service';
-import { Agency } from '../agency/entities/agency.entity';
-import { UsersService } from '../users/users.service';
-import type { AdminLoginDto } from './dto/admin-login.dto';
-import type { CreateAdminDto } from './dto/create-admin.dto';
-import { Admin } from './entities/admin.entity';
-import { AdminRole } from './entities/admin-role.entity';
-import { OfficeLocation } from './entities/office-location.entity';
-import { Permission } from './entities/permission.entity';
+import { Admin } from '../admins/entities/admin.entity';
+import { Staff } from '../staff/entities/staff.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
-import { Role } from './entities/role.entity';
-import { RolePermission } from './entities/role-permission.entity';
-import { NdiService } from './ndi.service';
-
-const BCRYPT_ROUNDS = 12;
 
 interface JwtPayload {
-  userId: Uuid;
-  cidNo: string;
-  fullName?: string;
-  roleType: 'CITIZEN' | 'ADMIN' | 'SUPER_ADMIN';
+  sub: Uuid;
+  email?: string;
+  role: string;
   type: TokenType;
-  roles?: string[];
-  permissions?: Array<{ actions: string; subjects: string }>;
-  officeLocationId?: Uuid;
-}
-
-export interface LoginResponse {
-  message: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  user: {
-    id: string;
-    cidNo: string;
-    fullName: string;
-    roleType: string;
-    roles?: string[];
-    officeLocationId?: string;
-  };
-  ability?: Array<{
-    name: string;
-    description?: string;
-    action: string | string[];
-    subject: string | string[];
-  }>;
 }
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
     @InjectRepository(Admin)
-    private readonly adminRepository: Repository<Admin>,
-    @InjectRepository(Role)
-    private readonly roleRepository: Repository<Role>,
-    // @InjectRepository(Permission)
-    // private readonly permissionRepository: Repository<Permission>,
-    @InjectRepository(AdminRole)
-    private readonly adminRoleRepository: Repository<AdminRole>,
-    @InjectRepository(RolePermission)
-    private readonly rolePermissionRepository: Repository<RolePermission>,
-    @InjectRepository(OfficeLocation)
-    private readonly officeLocationRepository: Repository<OfficeLocation>,
-    @InjectRepository(Agency)
-    private readonly agencyRepository: Repository<Agency>,
+    private readonly adminRepo: Repository<Admin>,
+    @InjectRepository(Staff)
+    private readonly staffRepo: Repository<Staff>,
     @InjectRepository(RefreshToken)
-    private readonly refreshTokenRepository: Repository<RefreshToken>,
+    private readonly refreshTokenRepo: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
     private readonly configService: ApiConfigService,
-    private readonly ndiService: NdiService,
   ) {}
 
-  /**
-   * CITIZEN LOGIN - NDI BASED
-   * Creates NDI proof request, user scans QR, authentication happens via NATS callback
-   */
-  async loginCitizen(): Promise<any> {
-    console.log(
-      '🔍 [loginCitizen] Creating NDI proof request for citizen login',
-    );
+  // ── Admin Login ──
 
-    // Generate Proof Request
-    const ndiResponse = await this.ndiService.createProofRequest({
-      proofName: 'Census Citizen Login',
-      attributes: ['ID Number', 'Full Name'],
-    });
-
-    return {
-      message: 'Please scan the QR code with your Bhutan NDI app',
-      ...ndiResponse,
-    };
-  }
-
-  /**
-   * AUTHENTICATE CITIZEN WITH VERIFIED NDI DATA
-   * Called by NATS handler after NDI verification completes
-   */
-  /**
-   * UNIFIED NDI AUTHENTICATION
-   * Handles both Citizen (auto-create) and Admin (table check) logins
-   */
-  async authenticateViaNDI(
-    ndiData: { cidNo: string; fullName?: string },
-    userType: 'ADMIN' | 'CITIZEN',
-    ipAddress?: string,
+  async adminLogin(
+    email: string,
+    password: string,
+    ip?: string,
     userAgent?: string,
-  ): Promise<LoginResponse> {
-    console.log(
-      `🔍 [authenticateViaNDI] Processing ${userType} login for CID:`,
-      ndiData.cidNo,
-    );
-    console.log(
-      '🔍 [authenticateViaNDI] Received NDI data:',
-      JSON.stringify(ndiData, null, 2),
-    );
+  ) {
+    const admin = await this.adminRepo.findOne({ where: { email } });
 
-    if (userType === 'CITIZEN') {
-      // ---------------------------------------------------------
-      // CITIZEN FLOW: Check User table, Auto-create if missing
-      // ---------------------------------------------------------
-      let user = await this.usersService.findByCidNo(ndiData.cidNo);
-
-      if (user) {
-        console.log(
-          '✅ [authenticateViaNDI] Found existing citizen user:',
-          JSON.stringify(user, null, 2),
-        );
-
-        // Update fullName if it's missing or if NDI provides a new one
-        if (
-          ndiData.fullName &&
-          (!user.fullName || user.fullName === 'Unknown User')
-        ) {
-          console.log(
-            '🔍 [authenticateViaNDI] Updating user fullName from:',
-            user.fullName,
-            'to:',
-            ndiData.fullName,
-          );
-          user = await this.usersService.update(user.id, {
-            fullName: ndiData.fullName,
-          });
-          console.log(
-            '✅ [authenticateViaNDI] Updated user fullName from NDI:',
-            JSON.stringify(user, null, 2),
-          );
-        }
-      } else {
-        console.log('🔍 [authenticateViaNDI] Creating new user with data:', {
-          cidNo: ndiData.cidNo,
-          fullName: ndiData.fullName || 'Unknown User',
-        });
-        user = await this.usersService.create({
-          cidNo: ndiData.cidNo,
-          fullName: ndiData.fullName || 'Unknown User',
-        });
-        console.log(
-          '✅ [authenticateViaNDI] Created new citizen user:',
-          JSON.stringify(user, null, 2),
-        );
-      }
-
-      const accessToken = await this.generateAccessToken({
-        userId: user.id,
-        cidNo: user.cidNo,
-        fullName: user.fullName,
-        roleType: 'CITIZEN',
-        type: TokenType.ACCESS_TOKEN,
-      });
-
-      const refreshToken = await this.generateRefreshToken(user.id, 'CITIZEN');
-      await this.storeRefreshToken(
-        refreshToken,
-        user.id,
-        'CITIZEN',
-        ipAddress,
-        userAgent,
-      );
-
-      return {
-        message: 'Logged in successfully as Citizen',
-        accessToken,
-        refreshToken,
-        expiresIn: this.configService.authConfig.jwtExpirationTime,
-        user: {
-          id: user.id,
-          cidNo: user.cidNo,
-          fullName: user.fullName || 'Unknown User',
-          roleType: user.roleType,
-        },
-      };
-    } else {
-      // ---------------------------------------------------------
-      // ADMIN FLOW: Check Admin table, Fail if missing
-      // ---------------------------------------------------------
-      const admin = await this.adminRepository.findOne({
-        where: { cidNo: ndiData.cidNo },
-        relations: [
-          'adminRoles',
-          'adminRoles.role',
-          'adminRoles.role.rolePermissions',
-          'adminRoles.role.rolePermissions.permission',
-        ],
-      });
-
-      if (!admin) {
-        console.log('❌ [authenticateViaNDI] Admin not found');
-        throw new UnauthorizedException(
-          'Admin not found. Please contact Super Admin for access.',
-        );
-      }
-
-      console.log('✅ [authenticateViaNDI] Found admin:', admin.id);
-
-      // Check if SUPER_ADMIN
-      if (admin.roleType === 'SUPER_ADMIN') {
-        const accessToken = await this.generateAccessToken({
-          userId: admin.id,
-          cidNo: admin.cidNo,
-          fullName: admin.fullName,
-          roleType: 'SUPER_ADMIN',
-          type: TokenType.ACCESS_TOKEN,
-          roles: [],
-          permissions: [],
-          officeLocationId: admin.officeLocationId as Uuid,
-        });
-
-        const refreshToken = await this.generateRefreshToken(admin.id, 'ADMIN');
-        await this.storeRefreshToken(
-          refreshToken,
-          admin.id,
-          'ADMIN',
-          ipAddress,
-          userAgent,
-        );
-
-        return {
-          message: 'Logged in successfully as Super Admin (NDI)',
-          accessToken,
-          refreshToken,
-          expiresIn: this.configService.authConfig.jwtExpirationTime,
-          user: {
-            id: admin.id,
-            cidNo: admin.cidNo,
-            fullName: admin.fullName || 'Unknown Admin',
-            roleType: admin.roleType,
-            roles: [],
-          },
-          ability: [],
-        };
-      }
-
-      // Regular ADMIN
-      const { roles, permissions, permissionDetails } =
-        await this.getAdminRolesAndPermissions(admin.id);
-
-      const ability = permissionDetails.map((perm) => ({
-        name: perm.name,
-        action: perm.actions || '',
-        subject: perm.subjects || '',
-      }));
-
-      const accessToken = await this.generateAccessToken({
-        userId: admin.id,
-        cidNo: admin.cidNo,
-        fullName: admin.fullName,
-        roleType: 'ADMIN',
-        type: TokenType.ACCESS_TOKEN,
-        roles,
-        permissions,
-        officeLocationId: admin.officeLocationId as Uuid,
-      });
-
-      const refreshToken = await this.generateRefreshToken(admin.id, 'ADMIN');
-      await this.storeRefreshToken(
-        refreshToken,
-        admin.id,
-        'ADMIN',
-        ipAddress,
-        userAgent,
-      );
-
-      return {
-        message: 'Logged in successfully as Admin (NDI)',
-        accessToken,
-        refreshToken,
-        expiresIn: this.configService.authConfig.jwtExpirationTime,
-        user: {
-          id: admin.id,
-          cidNo: admin.cidNo,
-          fullName: admin.fullName || 'Unknown Admin',
-          roleType: admin.roleType,
-          roles,
-        },
-        ability,
-      };
-    }
-  }
-
-  async loginAdmin(
-    loginDto: AdminLoginDto,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<LoginResponse> {
-    console.log(
-      '🔍 [loginAdmin] Searching for admin with CID:',
-      loginDto.cidNo,
-    );
-
-    const admin = await this.adminRepository.findOne({
-      where: { cidNo: loginDto.cidNo },
-      relations: [
-        'adminRoles',
-        'adminRoles.role',
-        'adminRoles.role.rolePermissions',
-        'adminRoles.role.rolePermissions.permission',
-      ],
-    });
-
-    if (!admin) {
-      console.log('❌ [loginAdmin] Admin not found in admin table');
-      throw new UnauthorizedException('Admin not found. Contact Super Admin.');
+    if (!admin || !(await bcrypt.compare(password, admin.passwordHash))) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    console.log('✅ [loginAdmin] Found admin:', {
-      id: admin.id,
-      cidNo: admin.cidNo,
-      roleType: admin.roleType,
-    });
+    admin.lastLoginAt = new Date();
+    await this.adminRepo.save(admin);
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      admin.password,
-    );
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Check if SUPER_ADMIN (bypass role/permission checks)
-    if (admin.roleType === 'SUPER_ADMIN') {
-      // Generate access token (15 minutes)
-      const accessToken = await this.generateAccessToken({
-        userId: admin.id,
-        cidNo: admin.cidNo,
-        fullName: admin.fullName,
-        roleType: 'SUPER_ADMIN',
-        type: TokenType.ACCESS_TOKEN,
-        roles: [],
-        permissions: [],
-        officeLocationId: admin.officeLocationId as Uuid,
-      });
-
-      // Generate refresh token (3 months)
-      const refreshToken = await this.generateRefreshToken(admin.id, 'ADMIN');
-
-      // Store refresh token
-      await this.storeRefreshToken(
-        refreshToken,
-        admin.id,
-        'ADMIN',
-        ipAddress,
-        userAgent,
-      );
-
-      return {
-        message: 'Logged in successfully as Super Admin',
-        accessToken,
-        refreshToken,
-        expiresIn: this.configService.authConfig.jwtExpirationTime,
-        user: {
-          id: admin.id,
-          cidNo: admin.cidNo,
-          fullName: admin.fullName || 'Unknown Admin',
-          roleType: admin.roleType,
-          roles: [],
-          officeLocationId: admin.officeLocationId ?? undefined,
-        },
-        ability: [], // SUPER_ADMIN has no restrictions, empty ability array
-      };
-    }
-
-    // Regular ADMIN - Get roles and permissions
-    const { roles, permissions, permissionDetails } =
-      await this.getAdminRolesAndPermissions(admin.id);
-
-    // Format ability array
-    const ability = permissionDetails.map((perm) => {
-      return {
-        name: perm.name,
-        action: perm.actions || '',
-        subject: perm.subjects || '',
-      };
-    });
-
-    // Generate access token (15 minutes)
-    const accessToken = await this.generateAccessToken({
-      userId: admin.id,
-      cidNo: admin.cidNo,
-      fullName: admin.fullName,
-      roleType: 'ADMIN',
+    const payload: JwtPayload = {
+      sub: admin.id,
+      email: admin.email,
+      role: admin.role,
       type: TokenType.ACCESS_TOKEN,
-      roles,
-      permissions,
-      officeLocationId: admin.officeLocationId as Uuid,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
     });
 
-    // Generate refresh token (3 months)
-    const refreshToken = await this.generateRefreshToken(admin.id, 'ADMIN');
-
-    // Store refresh token
-    await this.storeRefreshToken(
-      refreshToken,
-      admin.id,
-      'ADMIN',
-      ipAddress,
+    const refreshToken = await this.createRefreshToken(
+      { adminId: admin.id },
+      ip,
       userAgent,
     );
 
     return {
-      message: 'Logged in successfully as Admin',
       accessToken,
-      refreshToken,
+      refreshToken: refreshToken.token,
       expiresIn: this.configService.authConfig.jwtExpirationTime,
+      tokenType: 'Bearer',
       user: {
         id: admin.id,
-        cidNo: admin.cidNo,
-        fullName: admin.fullName || 'Unknown Admin',
-        roleType: admin.roleType,
-        roles,
-        officeLocationId: admin.officeLocationId ?? undefined,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        officeId: admin.officeId,
       },
-      ability,
     };
   }
 
-  /**
-   * GET ADMIN ROLES AND PERMISSIONS
-   */
-  private async getAdminRolesAndPermissions(adminId: string): Promise<{
-    roles: string[];
-    permissions: Array<{ actions: string; subjects: string }>;
-    permissionDetails: Array<{
-      name: string;
-      description?: string;
-      actions: string;
-      subjects: string;
-    }>;
-  }> {
-    const adminRoles = await this.adminRoleRepository.find({
-      where: { adminId },
-      relations: [
-        'role',
-        'role.rolePermissions',
-        'role.rolePermissions.permission',
-      ],
-    });
+  // ── Staff Login ──
 
-    const roles = adminRoles.map((ar) => ar.role.name);
+  async staffLogin(
+    employeeId: string,
+    password: string,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    const staff = await this.staffRepo.findOne({ where: { employeeId } });
 
-    // Super Admin gets all permissions
-    const isSuperAdmin = roles.some((role) =>
-      role.toLowerCase().includes('super'),
-    );
-
-    if (isSuperAdmin) {
-      // Return full CRUD access for all subjects
-      return {
-        roles,
-        permissions: [
-          {
-            actions: 'CREATE,READ,UPDATE,DELETE',
-            subjects: '*', // Wildcard for all subjects
-          },
-        ],
-        permissionDetails: [
-          {
-            name: 'Super Admin',
-            description: 'Full system access',
-            actions: 'CREATE,READ,UPDATE,DELETE',
-            subjects: '*',
-          },
-        ],
-      };
+    if (
+      !staff ||
+      !staff.passwordHash ||
+      !(await bcrypt.compare(password, staff.passwordHash))
+    ) {
+      throw new UnauthorizedException('Invalid employee ID or password');
     }
 
-    // Regular admin - get assigned permissions
-    const permissionsMap = new Map<
-      string,
-      { actions: string; subjects: string }
-    >();
+    staff.lastLoginAt = new Date();
+    await this.staffRepo.save(staff);
 
-    const permissionDetailsMap = new Map<
-      string,
-      {
-        name: string;
-        description?: string;
-        actions: string;
-        subjects: string;
-      }
-    >();
-
-    for (const ar of adminRoles) {
-      if (ar.role.rolePermissions)
-        for (const rp of ar.role.rolePermissions) {
-          const key = rp.permission.name;
-          if (!permissionsMap.has(key)) {
-            permissionsMap.set(key, {
-              actions: rp.permission.actions,
-              subjects: rp.permission.subjects,
-            });
-            permissionDetailsMap.set(key, {
-              name: rp.permission.name,
-              description: rp.permission.description,
-              actions: rp.permission.actions,
-              subjects: rp.permission.subjects,
-            });
-          }
-        }
-    }
-
-    return {
-      roles,
-      permissions: [...permissionsMap.values()],
-      permissionDetails: [...permissionDetailsMap.values()],
+    const payload: JwtPayload = {
+      sub: staff.id,
+      email: staff.email,
+      role: 'employee',
+      type: TokenType.ACCESS_TOKEN,
     };
-  }
 
-  /**
-   * GENERATE ACCESS TOKEN (JWT)
-   */
-  private async generateAccessToken(payload: JwtPayload): Promise<string> {
-    return this.jwtService.signAsync(payload, {
+    const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: this.configService.authConfig.jwtExpirationTime,
     });
-  }
 
-  /**
-   * CREATE ADMIN USER
-   * Creates a new admin with office location, roles, and permissions
-   */
-  async createAdmin(createAdminDto: CreateAdminDto): Promise<{
-    admin: Admin;
-    assignedRoles: Role[];
-    effectivePermissions: Permission[];
-  }> {
-    // 1. Check if admin with CID already exists
-    const existingAdmin = await this.adminRepository.findOne({
-      where: { cidNo: createAdminDto.cidNo },
-    });
-
-    if (existingAdmin) {
-      throw new ConflictException(
-        `Admin with CID ${createAdminDto.cidNo} already exists`,
-      );
-    }
-
-    // 2. Handle Office Location - use existing or create new
-    let officeLocation: OfficeLocation;
-
-    if (createAdminDto.officeLocationId) {
-      // Use existing office location
-      const existing = await this.officeLocationRepository.findOne({
-        where: { id: createAdminDto.officeLocationId as any },
-      });
-
-      if (!existing) {
-        throw new NotFoundException(
-          `Office location with ID ${createAdminDto.officeLocationId} not found`,
-        );
-      }
-
-      officeLocation = existing;
-    } else if (createAdminDto.officeLocationName) {
-      // Check if office with this name already exists
-      const existingByName = await this.officeLocationRepository.findOne({
-        where: { name: createAdminDto.officeLocationName },
-      });
-
-      if (existingByName) {
-        officeLocation = existingByName;
-      } else {
-        // Create new office location
-        officeLocation = await this.officeLocationRepository.save({
-          name: createAdminDto.officeLocationName,
-        });
-      }
-    } else {
-      throw new BadRequestException(
-        'Either officeLocationId or officeLocationName must be provided',
-      );
-    }
-
-    // 2.5. Validate agency if provided
-    if (createAdminDto.agencyId) {
-      const agency = await this.agencyRepository.findOne({
-        where: { id: createAdminDto.agencyId as any },
-      });
-
-      if (!agency) {
-        throw new NotFoundException(
-          `Agency with ID ${createAdminDto.agencyId} not found`,
-        );
-      }
-    }
-
-    // 3. Validate all role IDs exist
-    const roles = await this.roleRepository.findByIds(createAdminDto.roleIds);
-
-    if (roles.length !== createAdminDto.roleIds.length) {
-      throw new BadRequestException('One or more role IDs are invalid');
-    }
-
-    // 4. Hash password
-    const hashedPassword = await bcrypt.hash(
-      createAdminDto.password,
-      BCRYPT_ROUNDS,
+    const refreshToken = await this.createRefreshToken(
+      { staffId: staff.id },
+      ip,
+      userAgent,
     );
-
-    // 4.5. Check if any role is SUPER_ADMIN
-    const isSuperAdmin = roles.some(
-      (role) =>
-        role.name.toUpperCase().includes('SUPER') ||
-        role.name.toUpperCase().includes('SUPERADMIN'),
-    );
-
-    // 5. Create Admin entity
-    const admin = await this.adminRepository.save({
-      cidNo: createAdminDto.cidNo,
-      password: hashedPassword,
-      email: createAdminDto.email,
-      mobileNo: createAdminDto.mobileNo,
-      agencyId: createAdminDto.agencyId,
-      roleType: isSuperAdmin ? 'SUPER_ADMIN' : 'ADMIN',
-      officeLocationId: officeLocation.id,
-    });
-
-    // 6. Create AdminRole entries (assigns roles to admin)
-    const adminRolePromises = roles.map((role) =>
-      this.adminRoleRepository.save({
-        adminId: admin.id,
-        roleId: role.id,
-      }),
-    );
-
-    await Promise.all(adminRolePromises);
-
-    // 7. Get all permissions from assigned roles
-    const rolePermissions = await this.rolePermissionRepository.find({
-      where: roles.map((role) => ({ roleId: role.id })),
-      relations: ['permission'],
-    });
-
-    const uniquePermissions = [
-      ...new Map(
-        rolePermissions.map((rp) => [rp.permission.id, rp.permission]),
-      ).values(),
-    ];
 
     return {
-      admin,
-      assignedRoles: roles,
-      effectivePermissions: uniquePermissions,
+      accessToken,
+      refreshToken: refreshToken.token,
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
+      tokenType: 'Bearer',
+      user: {
+        id: staff.id,
+        name: staff.name,
+        employeeId: staff.employeeId,
+        role: 'employee',
+        officeId: staff.officeId,
+        departmentId: staff.departmentId,
+      },
     };
   }
 
-  /**
-   * VALIDATE TOKEN AND GET USER
-   */
-  async validateToken(token: string): Promise<JwtPayload> {
-    try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
-      return payload;
-    } catch {
-      throw new UnauthorizedException('Invalid or expired token');
+  // ── Refresh Token ──
+
+  async refreshAccessToken(token: string, ip?: string, userAgent?: string) {
+    const existing = await this.refreshTokenRepo.findOne({
+      where: { token, isRevoked: false },
+    });
+
+    if (!existing || existing.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Revoke old token
+    existing.isRevoked = true;
+    await this.refreshTokenRepo.save(existing);
+
+    // Determine user
+    let payload: JwtPayload;
+    const ownerKey: { adminId?: Uuid; staffId?: Uuid } = {};
+
+    if (existing.adminId) {
+      const admin = await this.adminRepo.findOne({
+        where: { id: existing.adminId },
+      });
+
+      if (!admin) throw new UnauthorizedException('Admin not found');
+
+      payload = {
+        sub: admin.id,
+        email: admin.email,
+        role: admin.role,
+        type: TokenType.ACCESS_TOKEN,
+      };
+      ownerKey.adminId = admin.id;
+    } else if (existing.staffId) {
+      const staff = await this.staffRepo.findOne({
+        where: { id: existing.staffId },
+      });
+
+      if (!staff) throw new UnauthorizedException('Staff not found');
+
+      payload = {
+        sub: staff.id,
+        email: staff.email,
+        role: 'employee',
+        type: TokenType.ACCESS_TOKEN,
+      };
+      ownerKey.staffId = staff.id;
+    } else {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
+    });
+
+    const newRefreshToken = await this.createRefreshToken(
+      ownerKey,
+      ip,
+      userAgent,
+    );
+
+    return {
+      accessToken,
+      refreshToken: newRefreshToken.token,
+      expiresIn: this.configService.authConfig.jwtExpirationTime,
+      tokenType: 'Bearer',
+    };
+  }
+
+  async revokeRefreshToken(token: string): Promise<void> {
+    const existing = await this.refreshTokenRepo.findOne({
+      where: { token },
+    });
+
+    if (existing) {
+      existing.isRevoked = true;
+      await this.refreshTokenRepo.save(existing);
     }
   }
 
-  /**
-   * CHECK PERMISSION
-   * Validates if user has required action on subject
-   */
-  hasPermission(
-    userPermissions: Array<{ actions: string; subjects: string }>,
-    requiredAction: string,
-    requiredSubject: string,
-  ): boolean {
-    return userPermissions.some((perm) => {
-      const subjectArray = new Set(
-        (perm.subjects || '').split(',').map((s) => s.trim()),
-      );
-      const actionArray = (perm.actions || '').split(',').map((a) => a.trim());
+  // ── Helpers ──
 
-      // Note: PERMISSION_MAPPING removed - no longer expanding composite permissions
-      const hasWildcard = subjectArray.has('*');
-      const hasSubject = hasWildcard || subjectArray.has(requiredSubject);
-      const hasAction = actionArray.includes(requiredAction);
-
-      return hasSubject && hasAction;
-    });
-  }
-
-  /**
-   * GENERATE REFRESH TOKEN (3 months expiry)
-   */
-  private async generateRefreshToken(
-    userId: Uuid,
-    userType: 'CITIZEN' | 'ADMIN',
-  ): Promise<string> {
-    const jti = randomBytes(32).toString('hex');
-
-    const payload = {
-      userId,
-      userType,
-      type: TokenType.REFRESH_TOKEN,
-      jti, // unique token ID
-    };
-
-    // Use expiration time from config
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      expiresIn: this.configService.authConfig.jwtRefreshExpirationTime,
-    });
-
-    return refreshToken;
-  }
-
-  /**
-   * STORE REFRESH TOKEN
-   */
-  private async storeRefreshToken(
-    token: string,
-    userId: Uuid,
-    userType: 'CITIZEN' | 'ADMIN',
-    ipAddress?: string,
+  private async createRefreshToken(
+    owner: { adminId?: Uuid; staffId?: Uuid },
+    ip?: string,
     userAgent?: string,
-  ): Promise<void> {
+  ): Promise<RefreshToken> {
+    const token = randomBytes(64).toString('hex');
     const expiresAt = new Date(
       Date.now() +
         this.configService.authConfig.jwtRefreshExpirationTime * 1000,
     );
 
-    await this.refreshTokenRepository.save({
+    const refreshToken = this.refreshTokenRepo.create({
       token,
-      userId: userType === 'CITIZEN' ? userId : null,
-      adminId: userType === 'ADMIN' ? userId : null,
+      ...owner,
       expiresAt,
-      isRevoked: false,
-      ipAddress: ipAddress || null,
-      userAgent: userAgent || null,
-    });
-  }
-
-  /**
-   * REFRESH ACCESS TOKEN (with rotation)
-   * - Validates refresh token
-   * - Generates new access token
-   * - Generates new refresh token
-   * - Revokes old refresh token
-   */
-  async refreshAccessToken(
-    refreshToken: string,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
-    // 1. Verify refresh token signature
-    let payload: any;
-    try {
-      payload = await this.jwtService.verifyAsync(refreshToken);
-    } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
-    }
-
-    // 2. Check token type
-    if (payload.type !== TokenType.REFRESH_TOKEN) {
-      throw new UnauthorizedException('Invalid token type');
-    }
-
-    // 3. Check if token exists and is not revoked
-    const storedToken = await this.refreshTokenRepository.findOne({
-      where: { token: refreshToken },
-    });
-
-    if (!storedToken) {
-      throw new UnauthorizedException('Refresh token not found');
-    }
-
-    if (storedToken.isRevoked) {
-      throw new UnauthorizedException('Refresh token has been revoked');
-    }
-
-    if (storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token has expired');
-    }
-
-    // 4. Load fresh user data with latest permissions
-    const { userId, userType } = payload;
-
-    let accessTokenPayload: JwtPayload;
-    let newAccessToken: string;
-
-    if (userType === 'CITIZEN') {
-      const user = await this.usersService.findOne(userId);
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      accessTokenPayload = {
-        userId: user.id,
-        cidNo: user.cidNo,
-        fullName: user.fullName,
-        roleType: 'CITIZEN',
-        type: TokenType.ACCESS_TOKEN,
-      };
-
-      newAccessToken = await this.generateAccessToken(accessTokenPayload);
-    } else {
-      // ADMIN or SUPER_ADMIN
-      const admin = await this.adminRepository.findOne({
-        where: { id: userId },
-        relations: [
-          'adminRoles',
-          'adminRoles.role',
-          'adminRoles.role.rolePermissions',
-          'adminRoles.role.rolePermissions.permission',
-        ],
-      });
-
-      if (!admin) {
-        throw new UnauthorizedException('Admin not found');
-      }
-
-      if (admin.roleType === 'SUPER_ADMIN') {
-        accessTokenPayload = {
-          userId: admin.id,
-          cidNo: admin.cidNo,
-          fullName: admin.fullName,
-          roleType: 'SUPER_ADMIN',
-          type: TokenType.ACCESS_TOKEN,
-          roles: [],
-          permissions: [],
-          officeLocationId: admin.officeLocationId as Uuid,
-        };
-      } else {
-        const { roles, permissions } = await this.getAdminRolesAndPermissions(
-          admin.id,
-        );
-
-        accessTokenPayload = {
-          userId: admin.id,
-          cidNo: admin.cidNo,
-          fullName: admin.fullName,
-          roleType: 'ADMIN',
-          type: TokenType.ACCESS_TOKEN,
-          roles,
-          permissions,
-          officeLocationId: admin.officeLocationId as Uuid,
-        };
-      }
-
-      newAccessToken = await this.generateAccessToken(accessTokenPayload);
-    }
-
-    // 5. Generate new refresh token
-    const newRefreshToken = await this.generateRefreshToken(userId, userType);
-
-    // 6. Store new refresh token
-    await this.storeRefreshToken(
-      newRefreshToken,
-      userId,
-      userType,
-      ipAddress,
+      ipAddress: ip,
       userAgent,
-    );
-
-    // 7. Revoke old refresh token (rotation)
-    await this.refreshTokenRepository.update(
-      { token: refreshToken },
-      { isRevoked: true },
-    );
-
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      expiresIn: this.configService.authConfig.jwtExpirationTime,
-    };
-  }
-
-  /**
-   * LOGOUT (revoke refresh token)
-   */
-  async logout(refreshToken: string): Promise<void> {
-    const storedToken = await this.refreshTokenRepository.findOne({
-      where: { token: refreshToken },
     });
 
-    if (!storedToken) {
-      throw new NotFoundException('Refresh token not found');
-    }
-
-    await this.refreshTokenRepository.update(
-      { token: refreshToken },
-      { isRevoked: true },
-    );
-  }
-
-  /**
-   * LOGOUT ALL DEVICES (revoke all user's refresh tokens)
-   */
-  async logoutAllDevices(
-    userId: Uuid,
-    userType: 'CITIZEN' | 'ADMIN',
-  ): Promise<void> {
-    const whereCondition =
-      userType === 'CITIZEN'
-        ? { userId, isRevoked: false }
-        : { adminId: userId, isRevoked: false };
-
-    await this.refreshTokenRepository.update(whereCondition, {
-      isRevoked: true,
-    });
+    return this.refreshTokenRepo.save(refreshToken);
   }
 }

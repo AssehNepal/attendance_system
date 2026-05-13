@@ -17,7 +17,6 @@ export class AwsS3Service {
     const config = configService.awsS3Config;
 
     this.s3 = new S3({
-      apiVersion: config.bucketApiVersion,
       region: config.bucketRegion,
     });
   }
