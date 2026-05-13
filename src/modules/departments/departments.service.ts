@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import type { PageOptionsDto } from '../../common/dto/page-options.dto';
-import { Department } from './entities/department.entity';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { Department } from './entities/department.entity';
 
 @Injectable()
 export class DepartmentsService {
@@ -15,6 +19,16 @@ export class DepartmentsService {
   ) {}
 
   async create(dto: CreateDepartmentDto): Promise<Department> {
+    const existing = await this.deptRepo.findOne({
+      where: { officeId: dto.officeId, name: dto.name },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `A department with name '${dto.name}' already exists in this office`,
+      );
+    }
+
     const dept = this.deptRepo.create(dto);
 
     return this.deptRepo.save(dept);
@@ -46,7 +60,7 @@ export class DepartmentsService {
   async findOne(id: Uuid): Promise<Department> {
     const dept = await this.deptRepo.findOne({
       where: { id },
-      relations: ['office', 'headStaff'],
+      relations: ['office'],
     });
 
     if (!dept) {

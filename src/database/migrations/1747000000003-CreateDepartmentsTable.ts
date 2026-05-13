@@ -10,9 +10,9 @@ export class CreateDepartmentsTable1747000000003 implements MigrationInterface {
         "office_id"     uuid NOT NULL,
         "name"          varchar(150) NOT NULL,
         "code"          varchar(20) NOT NULL,
-        "head_staff_id" uuid,
         "is_active"     boolean NOT NULL DEFAULT true,
         "created_at"    timestamptz NOT NULL DEFAULT now(),
+        "updated_at"    timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_departments" PRIMARY KEY ("id"),
         CONSTRAINT "uq_dept_code_per_office" UNIQUE ("office_id", "code")
       )

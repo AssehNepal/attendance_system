@@ -12,7 +12,7 @@ import { Staff } from '../staff/entities/staff.entity';
 interface JwtPayload {
   sub: Uuid;
   email: string;
-  userType: 'admin' | 'super_admin' | 'staff';
+  role: string;
   type: TokenType;
   officeId?: Uuid;
 }
@@ -38,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    if (payload.userType === 'admin' || payload.userType === 'super_admin') {
+    if (payload.role === 'admin' || payload.role === 'super_admin') {
       const admin = await this.adminRepository.findOne({
         where: { id: payload.sub },
       });
@@ -57,7 +57,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       };
     }
 
-    if (payload.userType === 'staff') {
+    if (payload.role === 'employee') {
       const staff = await this.staffRepository.findOne({
         where: { id: payload.sub },
       });

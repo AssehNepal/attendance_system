@@ -2,22 +2,32 @@ import {
   BooleanFieldOptional,
   StringField,
   UUIDField,
-  UUIDFieldOptional,
 } from '../../../decorators/field.decorators';
 
 export class CreateDepartmentDto {
-  @UUIDField()
+  @UUIDField({
+    description: 'Office ID',
+    example: '58b587e4-4b92-4ba8-a637-de9966440390',
+  })
   officeId!: Uuid;
 
-  @StringField({ maxLength: 150 })
+  @StringField({
+    maxLength: 150,
+    description: 'Department name',
+    example: 'ICT Department',
+  })
   name!: string;
 
-  @StringField({ maxLength: 20 })
+  @StringField({
+    maxLength: 20,
+    description: 'Department code',
+    example: 'ICT01',
+  })
   code!: string;
 
-  @UUIDFieldOptional()
-  headStaffId?: Uuid;
-
-  @BooleanFieldOptional()
+  @BooleanFieldOptional({
+    description: 'Whether the department is active',
+    example: true,
+  })
   isActive?: boolean;
 }

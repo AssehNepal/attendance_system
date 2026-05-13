@@ -1,7 +1,6 @@
 import {
   BooleanFieldOptional,
   StringFieldOptional,
-  UUIDFieldOptional,
 } from '../../../decorators/field.decorators';
 
 export class UpdateDepartmentDto {
@@ -10,9 +9,6 @@ export class UpdateDepartmentDto {
 
   @StringFieldOptional({ maxLength: 20 })
   code?: string;
-
-  @UUIDFieldOptional()
-  headStaffId?: Uuid;
 
   @BooleanFieldOptional()
   isActive?: boolean;

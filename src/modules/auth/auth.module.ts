@@ -6,9 +6,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ApiConfigService } from '../../shared/services/api-config.service';
 import { Admin } from '../admins/entities/admin.entity';
 import { Staff } from '../staff/entities/staff.entity';
-import { RefreshToken } from './entities/refresh-token.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { PublicStrategy } from './public.strategy';
 
