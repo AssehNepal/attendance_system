@@ -1,15 +1,15 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import type { PageOptionsDto } from '../../common/dto/page-options.dto';
-import { Office } from './entities/office.entity';
 import { CreateOfficeDto } from './dto/create-office.dto';
 import { UpdateOfficeDto } from './dto/update-office.dto';
+import { Office } from './entities/office.entity';
 
 @Injectable()
 export class OfficesService {
