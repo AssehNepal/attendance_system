@@ -19,7 +19,6 @@ export class CreateAttendanceLogsTable1747000000005 implements MigrationInterfac
         "created_at"      timestamptz NOT NULL DEFAULT now(),
         "updated_at"      timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_attendance_logs" PRIMARY KEY ("id"),
-        CONSTRAINT "uq_staff_log_date" UNIQUE ("staff_id", "log_date"),
         CONSTRAINT "chk_attendance_status" CHECK ("status" IN ('present', 'out', 'on_duty', 'on_leave', 'absent', 'holiday'))
       )
     `);

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import type { PageOptionsDto } from '../../common/dto/page-options.dto';
 import { CreateAttendanceLogDto } from './dto/create-attendance-log.dto';
@@ -30,8 +30,40 @@ export class AttendanceService {
 
   // ── Attendance Logs ──
 
-  async createLog(dto: CreateAttendanceLogDto): Promise<AttendanceLog> {
-    const log = this.attendanceRepo.create(dto);
+  async createLog(
+    dto: CreateAttendanceLogDto,
+    source: string = 'manual',
+  ): Promise<AttendanceLog> {
+    const now = new Date();
+    const logDate = now.toISOString().split('T')[0]!;
+    const currentTime = now.toTimeString().split(' ')[0]!;
+
+    // Find the latest open log (has checkin but no checkout) for this staff today
+    const openLog = await this.attendanceRepo.findOne({
+      where: { staffId: dto.staffId, logDate, checkoutTime: IsNull() },
+      order: { createdAt: 'DESC' },
+    });
+
+    // If there's an open log, close it with checkout
+    if (openLog && openLog.checkinTime) {
+      openLog.checkoutTime = currentTime;
+      openLog.checkoutSource = source;
+
+      return this.attendanceRepo.save(openLog);
+    }
+
+    // No open log, create a new checkin row
+    const log = this.attendanceRepo.create({
+      staffId: dto.staffId,
+      logDate,
+      checkinTime: currentTime,
+      checkoutTime: undefined,
+      status: 'present',
+      remarks: undefined,
+      checkinSource: source,
+      checkoutSource: undefined,
+      overrideBy: undefined,
+    });
 
     return this.attendanceRepo.save(log);
   }

@@ -30,7 +30,13 @@ export class AttendanceController {
   @Post('logs')
   @HttpCode(HttpStatus.CREATED)
   createLog(@Body() dto: CreateAttendanceLogDto) {
-    return this.attendanceService.createLog(dto);
+    return this.attendanceService.createLog(dto, 'manual');
+  }
+
+  @Post('logs/biometric')
+  @HttpCode(HttpStatus.CREATED)
+  createBiometricLog(@Body() dto: CreateAttendanceLogDto) {
+    return this.attendanceService.createLog(dto, 'system');
   }
 
   @Get('logs')

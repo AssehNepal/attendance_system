@@ -14,7 +14,7 @@ export class CreateOfficesTable1747000000002 implements MigrationInterface {
         "office_end_time"       time NOT NULL DEFAULT '17:00',
         "absence_cutoff_time"   time NOT NULL DEFAULT '10:00',
         "is_active"             boolean NOT NULL DEFAULT true,
-        "created_by"            uuid,
+        "created_by"            uuid NOT NULL,
         "created_at"            timestamptz NOT NULL DEFAULT now(),
         "updated_at"            timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_offices" PRIMARY KEY ("id"),
