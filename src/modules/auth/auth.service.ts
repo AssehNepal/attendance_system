@@ -84,19 +84,19 @@ export class AuthService {
   // ── Staff Login ──
 
   async staffLogin(
-    employeeId: string,
+    cidNo: string,
     password: string,
     ip?: string,
     userAgent?: string,
   ) {
-    const staff = await this.staffRepo.findOne({ where: { employeeId } });
+    const staff = await this.staffRepo.findOne({ where: { cidNo } });
 
     if (
       !staff ||
-      !staff.passwordHash ||
-      !(await bcrypt.compare(password, staff.passwordHash))
+      !staff.password ||
+      !(await bcrypt.compare(password, staff.password))
     ) {
-      throw new UnauthorizedException('Invalid employee ID or password');
+      throw new UnauthorizedException('Invalid CID number or password');
     }
 
     staff.lastLoginAt = new Date();

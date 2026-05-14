@@ -33,10 +33,10 @@ class AdminLoginDto {
 }
 
 class StaffLoginDto {
-  @ApiProperty({ example: 'EMP-001', description: 'Staff employee ID' })
+  @ApiProperty({ example: '11501000001', description: 'Staff CID number' })
   @IsString()
   @IsNotEmpty()
-  employeeId!: string;
+  cidNo!: string;
 
   @ApiProperty({ example: 'P@ssw0rd123', description: 'Staff password' })
   @IsString()
@@ -143,15 +143,15 @@ export class AuthController {
   @Post('staff/login')
   @HttpCode(HttpStatus.OK)
   @PublicRoute()
-  @ApiOperation({ summary: 'Staff login with employee ID & password' })
+  @ApiOperation({ summary: 'Staff login with CID number & password' })
   @ApiBody({ type: StaffLoginDto })
   @ApiOkResponse({ type: LoginResponseDto, description: 'Login successful' })
   @ApiUnauthorizedResponse({
-    description: 'Invalid employee ID or password',
+    description: 'Invalid CID number or password',
   })
   async staffLogin(@Body() dto: StaffLoginDto, @Req() req: Request) {
     return this.authService.staffLogin(
-      dto.employeeId,
+      dto.cidNo,
       dto.password,
       req.ip,
       req.headers['user-agent'],

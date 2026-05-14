@@ -14,6 +14,9 @@ export class Staff extends AbstractEntity {
   @Column({ type: 'varchar', length: 50, unique: true, name: 'employee_id' })
   employeeId!: string;
 
+  @Column({ type: 'varchar', length: 150, nullable: true, name: 'cid_no' })
+  cidNo?: string;
+
   @Column({ type: 'varchar', length: 200 })
   name!: string;
 
@@ -23,20 +26,12 @@ export class Staff extends AbstractEntity {
   @Column({ type: 'varchar', length: 200, nullable: true, unique: true })
   email?: string;
 
-  @Column({
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-    name: 'password_hash',
-  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @Exclude({ toPlainOnly: true })
-  passwordHash?: string;
+  password?: string;
 
   @Column({ type: 'timestamptz', nullable: true, name: 'last_login_at' })
   lastLoginAt?: Date;
-
-  @Column({ type: 'varchar', length: 150, nullable: true })
-  designation?: string;
 
   @Column({
     type: 'varchar',
@@ -46,14 +41,8 @@ export class Staff extends AbstractEntity {
   })
   employmentType!: 'regular' | 'contract' | 'deputation';
 
-  @Column({
-    type: 'varchar',
-    length: 100,
-    nullable: true,
-    unique: true,
-    name: 'milvus_vector_id',
-  })
-  milvusVectorId?: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  photo?: string;
 
   @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive!: boolean;

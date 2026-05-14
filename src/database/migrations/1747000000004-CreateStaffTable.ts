@@ -10,21 +10,20 @@ export class CreateStaffTable1747000000004 implements MigrationInterface {
         "office_id"        uuid NOT NULL,
         "department_id"    uuid NOT NULL,
         "employee_id"      varchar(50) NOT NULL,
+        "cid_no"           varchar(150),
         "name"             varchar(200) NOT NULL,
         "contact_no"       varchar(20) NOT NULL,
         "email"            varchar(200),
-        "password_hash"    varchar(255),
+        "password"    varchar(255),
         "last_login_at"    timestamptz,
-        "designation"      varchar(150),
         "employment_type"  varchar(30) NOT NULL DEFAULT 'regular',
-        "milvus_vector_id" varchar(100),
+        "photo" varchar(100),
         "is_active"        boolean NOT NULL DEFAULT true,
         "created_at"       timestamptz NOT NULL DEFAULT now(),
         "updated_at"       timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_staff" PRIMARY KEY ("id"),
         CONSTRAINT "uq_staff_employee_id" UNIQUE ("employee_id"),
         CONSTRAINT "uq_staff_email" UNIQUE ("email"),
-        CONSTRAINT "uq_staff_milvus" UNIQUE ("milvus_vector_id"),
         CONSTRAINT "chk_employment_type" CHECK ("employment_type" IN ('regular', 'contract', 'deputation'))
       )
     `);
@@ -36,16 +35,9 @@ export class CreateStaffTable1747000000004 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "staff" ADD CONSTRAINT "fk_staff_department" FOREIGN KEY ("department_id") REFERENCES "departments"("id") ON DELETE CASCADE`,
     );
-
-    await queryRunner.query(
-      `ALTER TABLE "departments" ADD CONSTRAINT "fk_departments_head" FOREIGN KEY ("head_staff_id") REFERENCES "staff"("id") ON DELETE SET NULL`,
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "departments" DROP CONSTRAINT IF EXISTS "fk_departments_head"`,
-    );
     await queryRunner.query(
       `ALTER TABLE "staff" DROP CONSTRAINT IF EXISTS "fk_staff_department"`,
     );

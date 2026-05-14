@@ -1,6 +1,6 @@
 import {
-  NumberField,
   BooleanFieldOptional,
+  NumberField,
   UUIDField,
 } from '../../../decorators/field.decorators';
 
