@@ -1,3 +1,5 @@
+import { IsIn, IsOptional } from 'class-validator';
+
 import {
   BooleanFieldOptional,
   EmailField,
@@ -31,6 +33,10 @@ export class CreateAdminDto {
     maxLength: 20,
     description: 'Admin role',
     example: 'admin',
+  })
+  @IsOptional()
+  @IsIn(['super_admin', 'admin'], {
+    message: 'Role must be either super_admin or admin',
   })
   role?: 'super_admin' | 'admin';
 
