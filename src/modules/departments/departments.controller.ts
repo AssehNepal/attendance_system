@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 
 import { PageOptionsDto } from '../../common/dto/page-options.dto';
+import { AuthUser } from '../../decorators/auth-user.decorator';
 import { AuthGuard } from '../../guards/auth.guard';
 import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
@@ -35,8 +36,8 @@ export class DepartmentsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new department' })
-  create(@Body() dto: CreateDepartmentDto) {
-    return this.departmentsService.create(dto);
+  create(@Body() dto: CreateDepartmentDto, @AuthUser() user: any) {
+    return this.departmentsService.create(dto, user.officeId);
   }
 
   @Get()

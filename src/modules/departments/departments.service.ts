@@ -18,9 +18,9 @@ export class DepartmentsService {
     private readonly deptRepo: Repository<Department>,
   ) {}
 
-  async create(dto: CreateDepartmentDto): Promise<Department> {
+  async create(dto: CreateDepartmentDto, officeId: Uuid): Promise<Department> {
     const existing = await this.deptRepo.findOne({
-      where: { officeId: dto.officeId, name: dto.name },
+      where: { officeId, name: dto.name },
     });
 
     if (existing) {
@@ -29,7 +29,7 @@ export class DepartmentsService {
       );
     }
 
-    const dept = this.deptRepo.create(dto);
+    const dept = this.deptRepo.create({ ...dto, officeId });
 
     return this.deptRepo.save(dept);
   }
