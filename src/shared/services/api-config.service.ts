@@ -64,19 +64,33 @@ export class ApiConfigService {
   }
 
   get postgresConfig(): TypeOrmModuleOptions {
-    return {
+    const baseConfig = {
       autoLoadEntities: true,
       dropSchema: this.isTest,
-      type: 'postgres',
+      type: 'postgres' as const,
+      subscribers: [],
+      migrationsRun: false,
+      logging: this.getBoolean('ENABLE_ORM_LOGS'),
+      namingStrategy: new SnakeNamingStrategy(),
+    };
+
+    const databaseUrl = this.configService.get<string>('DATABASE_URL');
+
+    if (databaseUrl) {
+      return {
+        ...baseConfig,
+        url: databaseUrl,
+        ssl: { rejectUnauthorized: false },
+      };
+    }
+
+    return {
+      ...baseConfig,
       host: this.getString('DB_HOST'),
       port: this.getNumber('DB_PORT'),
       username: this.getString('DB_USERNAME'),
       password: this.getString('DB_PASSWORD'),
       database: this.getString('DB_DATABASE'),
-      subscribers: [],
-      migrationsRun: false,
-      logging: this.getBoolean('ENABLE_ORM_LOGS'),
-      namingStrategy: new SnakeNamingStrategy(),
     };
   }
 
