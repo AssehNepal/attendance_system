@@ -33,14 +33,15 @@ export class StaffService {
 
   async create(
     dto: CreateStaffDto,
+    officeId: Uuid,
     file?: { originalname: string; buffer: Buffer },
   ): Promise<Staff> {
     const office = await this.officeRepo.findOne({
-      where: { id: dto.officeId },
+      where: { id: officeId },
     });
 
     if (!office) {
-      throw new NotFoundException(`Office with ID "${dto.officeId}" not found`);
+      throw new NotFoundException(`Office with ID "${officeId}" not found`);
     }
 
     const department = await this.departmentRepo.findOne({
@@ -63,6 +64,7 @@ export class StaffService {
 
     const staff = this.staffRepo.create({
       ...dto,
+      officeId,
       password: dto.password ? await bcrypt.hash(dto.password, 10) : undefined,
     });
 

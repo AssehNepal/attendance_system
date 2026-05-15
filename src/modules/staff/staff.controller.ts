@@ -11,18 +11,29 @@ import {
   Post,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { PageOptionsDto } from '../../common/dto/page-options.dto';
+import { AuthUser } from '../../decorators/auth-user.decorator';
+import { AuthGuard } from '../../guards/auth.guard';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { StaffService } from './staff.service';
 
 @Controller('staff')
 @ApiTags('Staff')
+@UseGuards(AuthGuard())
+@ApiBearerAuth()
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
@@ -33,11 +44,6 @@ export class StaffController {
     schema: {
       type: 'object',
       properties: {
-        officeId: {
-          type: 'string',
-          format: 'uuid',
-          example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        },
         departmentId: {
           type: 'string',
           format: 'uuid',
@@ -57,15 +63,16 @@ export class StaffController {
         isActive: { type: 'boolean', example: true },
         photo: { type: 'string', format: 'binary' },
       },
-      required: ['officeId', 'departmentId', 'employeeId', 'name', 'contactNo'],
+      required: ['departmentId', 'employeeId', 'name', 'contactNo'],
     },
   })
   @UseInterceptors(FileInterceptor('photo'))
   create(
     @Body() dto: CreateStaffDto,
+    @AuthUser() user: any,
     @UploadedFile() file?: { originalname: string; buffer: Buffer },
   ) {
-    return this.staffService.create(dto, file);
+    return this.staffService.create(dto, user.officeId, file);
   }
 
   @Get()

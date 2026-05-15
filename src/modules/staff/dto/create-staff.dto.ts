@@ -8,12 +8,6 @@ import {
 
 export class CreateStaffDto {
   @UUIDField({
-    description: 'Office ID',
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  })
-  officeId!: Uuid;
-
-  @UUIDField({
     description: 'Department ID',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
   })
