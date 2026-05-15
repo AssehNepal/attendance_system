@@ -86,11 +86,13 @@ export class StaffService {
     return savedStaff;
   }
 
-  async findAll(pageOptionsDto: PageOptionsDto) {
+  async findAll(pageOptionsDto: PageOptionsDto, officeId: Uuid) {
     const qb = this.staffRepo.createQueryBuilder('staff');
 
+    qb.where('staff.officeId = :officeId', { officeId });
+
     if (pageOptionsDto.q) {
-      qb.where(
+      qb.andWhere(
         'staff.name ILIKE :q OR staff.employeeId ILIKE :q OR staff.email ILIKE :q',
         { q: `%${pageOptionsDto.q}%` },
       );
@@ -106,9 +108,9 @@ export class StaffService {
     return { data, total };
   }
 
-  async findByOffice(officeId: Uuid) {
+  async findByOffice(officeId: Uuid, departmentId: Uuid) {
     return this.staffRepo.find({
-      where: { officeId },
+      where: { officeId, departmentId },
       relations: ['department'],
     });
   }

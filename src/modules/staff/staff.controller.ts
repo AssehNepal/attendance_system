@@ -76,14 +76,17 @@ export class StaffController {
   }
 
   @Get()
-  findAll(@Query() pageOptionsDto: PageOptionsDto) {
-    return this.staffService.findAll(pageOptionsDto);
+  findAll(@Query() pageOptionsDto: PageOptionsDto, @AuthUser() user: any) {
+    return this.staffService.findAll(pageOptionsDto, user.officeId);
   }
 
-  @Get('office/:officeId')
-  @ApiParam({ name: 'officeId', type: 'string', format: 'uuid' })
-  findByOffice(@Param('officeId', ParseUUIDPipe) officeId: Uuid) {
-    return this.staffService.findByOffice(officeId);
+  @Get('office/:departmentId')
+  @ApiParam({ name: 'departmentId', type: 'string', format: 'uuid' })
+  findByOffice(
+    @AuthUser() user: any,
+    @Param('departmentId') departmentId: Uuid,
+  ) {
+    return this.staffService.findByOffice(user.officeId, departmentId);
   }
 
   @Get(':id')
