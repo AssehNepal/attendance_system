@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 
 import { CreateHolidayDto } from './dto/create-holiday.dto';
 import { CreateWeeklyHolidayDto } from './dto/create-weekly-holiday.dto';
+import { UpdateHolidayDto } from './dto/update-holiday.dto';
+import { UpdateWeeklyHolidayDto } from './dto/update-weekly-holiday.dto';
 import { Holiday } from './entities/holiday.entity';
 import { WeeklyHoliday } from './entities/weekly-holiday.entity';
 
@@ -32,7 +34,27 @@ export class HolidaysService {
     return this.weeklyRepo.find({ where: { officeId, isActive: true } });
   }
 
-  async removeWeekly(id: Uuid): Promise<void> {
+  async findWeeklyById(id: Uuid): Promise<WeeklyHoliday> {
+    const weekly = await this.weeklyRepo.findOne({ where: { id } });
+
+    if (!weekly) {
+      throw new NotFoundException('Weekly holiday not found');
+    }
+
+    return weekly;
+  }
+
+  async updateWeekly(
+    id: Uuid,
+    dto: UpdateWeeklyHolidayDto,
+  ): Promise<WeeklyHoliday> {
+    const weekly = await this.findWeeklyById(id);
+    Object.assign(weekly, dto);
+
+    return this.weeklyRepo.save(weekly);
+  }
+
+  async removeWeekly(id: Uuid): Promise<object> {
     const weekly = await this.weeklyRepo.findOne({ where: { id } });
 
     if (!weekly) {
@@ -40,6 +62,15 @@ export class HolidaysService {
     }
 
     await this.weeklyRepo.remove(weekly);
+
+    return {
+      success: true,
+      message: 'Resource successfully deleted.',
+      meta: {
+        id,
+        timestamp: new Date().toISOString(),
+      },
+    };
   }
 
   // ── Holidays ──
@@ -61,7 +92,24 @@ export class HolidaysService {
     });
   }
 
-  async removeHoliday(id: Uuid): Promise<void> {
+  async findHolidayById(id: Uuid): Promise<Holiday> {
+    const holiday = await this.holidayRepo.findOne({ where: { id } });
+
+    if (!holiday) {
+      throw new NotFoundException('Holiday not found');
+    }
+
+    return holiday;
+  }
+
+  async updateHoliday(id: Uuid, dto: UpdateHolidayDto): Promise<Holiday> {
+    const holiday = await this.findHolidayById(id);
+    Object.assign(holiday, dto);
+
+    return this.holidayRepo.save(holiday);
+  }
+
+  async removeHoliday(id: Uuid): Promise<object> {
     const holiday = await this.holidayRepo.findOne({ where: { id } });
 
     if (!holiday) {
@@ -69,5 +117,14 @@ export class HolidaysService {
     }
 
     await this.holidayRepo.remove(holiday);
+
+    return {
+      success: true,
+      message: 'Resource successfully deleted.',
+      meta: {
+        id,
+        timestamp: new Date().toISOString(),
+      },
+    };
   }
 }
