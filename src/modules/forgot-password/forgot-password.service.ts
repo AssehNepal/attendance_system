@@ -8,13 +8,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 
-import { ApiConfigService } from '../../shared/services/api-config.service';
 import { EmailService } from '../../shared/services/email.service';
 import { GeneratorService } from '../../shared/services/generator.service';
 import { Admin } from '../admins/entities/admin.entity';
-import { CreateForgotPasswordDto } from './dto/create-forgot-password.dto';
+import { Staff } from '../staff/entities/staff.entity';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { PasswordResetOtp } from './entities/password-reset-otp.entity';
+import { Otp } from './entities/otp.entity';
 
 @Injectable()
 export class ForgotPasswordService {
@@ -23,62 +22,59 @@ export class ForgotPasswordService {
   constructor(
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
-    @InjectRepository(PasswordResetOtp)
-    private readonly otpRepository: Repository<PasswordResetOtp>,
+    @InjectRepository(Staff)
+    private readonly staffRepository: Repository<Staff>,
+    @InjectRepository(Otp)
+    private readonly otpRepository: Repository<Otp>,
     private readonly generatorService: GeneratorService,
     private readonly emailService: EmailService,
-    private readonly configService: ApiConfigService,
   ) {}
 
-  async sendOtp(dto: CreateForgotPasswordDto) {
-    const { email } = dto;
+  async sendOtp(sessionUser: { id: Uuid; email: string; userType: string }) {
+    const { id, email, userType } = sessionUser;
 
     if (!email) {
-      throw new BadRequestException('Email must be provided');
+      throw new BadRequestException('No email associated with your account');
     }
 
-    const admin = await this.adminRepository.findOne({
-      where: { email },
-    });
-
-    if (!admin) {
-      this.logger.warn(`OTP requested for non-existent admin: ${email}`);
-      throw new NotFoundException('Admin not found');
+    // Verify the user still exists
+    if (userType === 'staff') {
+      const staff = await this.staffRepository.findOne({ where: { id } });
+      if (!staff) throw new NotFoundException('Staff not found');
+    } else {
+      const admin = await this.adminRepository.findOne({ where: { id } });
+      if (!admin) throw new NotFoundException('Admin not found');
     }
 
     const rawOtp = this.generatorService.generateSixDigitToken();
-    const hashedOtp = bcrypt.hashSync(rawOtp, 10);
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
-    const expiryMinutes = this.configService.otpConfig.expirationMinutes;
-    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
-
-    await this.otpRepository.delete({ adminId: admin.id });
+    // Remove any existing OTP for this user
+    await this.otpRepository.delete({ userId: id });
 
     await this.otpRepository.save({
-      adminId: admin.id,
-      otp: hashedOtp,
+      userId: id,
+      userType: userType === 'staff' ? 'staff' : 'admin',
+      otp: rawOtp,
+      email,
       expiresAt,
-      email: admin.email,
     });
 
-    await this.emailService.sendPasswordResetToken(admin.email, rawOtp);
+    await this.emailService.sendPasswordResetToken(email, rawOtp);
 
-    return { message: 'OTP sent successfully' };
+    this.logger.log(`OTP sent to ${email} (userType: ${userType})`);
+    return { message: 'OTP sent successfully to your registered email' };
   }
 
-  async verifyOtpAndResetPassword(dto: ResetPasswordDto) {
-    const { email, otp, newPassword } = dto;
-
-    const admin = await this.adminRepository.findOne({
-      where: { email },
-    });
-
-    if (!admin) {
-      throw new NotFoundException('Admin not found');
-    }
+  async verifyOtpAndResetPassword(
+    sessionUser: { id: Uuid; userType: string },
+    dto: ResetPasswordDto,
+  ) {
+    const { otp, newPassword } = dto;
+    const { id, userType } = sessionUser;
 
     const otpRecord = await this.otpRepository.findOne({
-      where: { adminId: admin.id },
+      where: { userId: id },
       order: { createdAt: 'DESC' },
     });
 
@@ -87,21 +83,32 @@ export class ForgotPasswordService {
     }
 
     if (otpRecord.expiresAt < new Date()) {
+      await this.otpRepository.delete({ userId: id });
       throw new BadRequestException(
         'OTP has expired. Please request a new one.',
       );
     }
 
-    const isValid = bcrypt.compareSync(otp, otpRecord.otp);
-
+    const isValid = otp === otpRecord.otp;
     if (!isValid) {
       throw new BadRequestException('Invalid OTP');
     }
 
-    admin.passwordHash = await bcrypt.hash(newPassword, 10);
-    await this.adminRepository.save(admin);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await this.otpRepository.delete({ adminId: admin.id });
+    if (userType === 'staff') {
+      const staff = await this.staffRepository.findOne({ where: { id } });
+      if (!staff) throw new NotFoundException('Staff not found');
+      staff.password = hashedPassword;
+      await this.staffRepository.save(staff);
+    } else {
+      const admin = await this.adminRepository.findOne({ where: { id } });
+      if (!admin) throw new NotFoundException('Admin not found');
+      admin.passwordHash = hashedPassword;
+      await this.adminRepository.save(admin);
+    }
+
+    await this.otpRepository.delete({ userId: id });
 
     return { message: 'Password reset successfully' };
   }
