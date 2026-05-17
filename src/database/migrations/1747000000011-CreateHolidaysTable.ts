@@ -13,6 +13,7 @@ export class CreateHolidaysTable1747000000011 implements MigrationInterface {
         "type"         varchar(30) NOT NULL DEFAULT 'public',
         "created_by"   uuid NOT NULL,
         "created_at"   timestamptz NOT NULL DEFAULT now(),
+        "updated_at"   timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_holidays" PRIMARY KEY ("id"),
         CONSTRAINT "uq_holiday_per_office" UNIQUE ("office_id", "holiday_date"),
         CONSTRAINT "chk_holiday_type" CHECK ("type" IN ('public', 'restricted'))

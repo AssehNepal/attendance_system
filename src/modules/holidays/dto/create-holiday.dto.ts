@@ -1,13 +1,9 @@
 import {
   StringField,
   StringFieldOptional,
-  UUIDField,
 } from '../../../decorators/field.decorators';
 
 export class CreateHolidayDto {
-  @UUIDField()
-  officeId!: Uuid;
-
   @StringField({ maxLength: 10 })
   holidayDate!: string;
 

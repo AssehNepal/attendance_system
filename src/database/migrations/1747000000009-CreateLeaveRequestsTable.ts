@@ -15,6 +15,7 @@ export class CreateLeaveRequestsTable1747000000009 implements MigrationInterface
         "status"       varchar(20) NOT NULL DEFAULT 'approved',
         "cancelled_at" timestamptz,
         "created_at"   timestamptz NOT NULL DEFAULT now(),
+        "updated_at"   timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_leave_requests" PRIMARY KEY ("id"),
         CONSTRAINT "chk_leave_type" CHECK ("leave_type" IN ('casual', 'earned', 'medical', 'maternity', 'special')),
         CONSTRAINT "chk_leave_status" CHECK ("status" IN ('approved', 'cancelled'))

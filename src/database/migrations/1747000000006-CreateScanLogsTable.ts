@@ -13,6 +13,7 @@ export class CreateScanLogsTable1747000000006 implements MigrationInterface {
         "scan_type"  varchar(20) NOT NULL,
         "source"     varchar(30) NOT NULL DEFAULT 'biometric',
         "created_at" timestamptz NOT NULL DEFAULT now(),
+        "updated_at" timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_scan_logs" PRIMARY KEY ("id"),
         CONSTRAINT "chk_scan_type" CHECK ("scan_type" IN ('checkin', 'on_duty'))
       )

@@ -1,14 +1,10 @@
 import {
   BooleanFieldOptional,
   NumberField,
-  UUIDField,
 } from '../../../decorators/field.decorators';
 
 export class CreateWeeklyHolidayDto {
-  @UUIDField()
-  officeId!: Uuid;
-
-  @NumberField({ int: true, minimum: 0, maximum: 6 })
+  @NumberField({ int: true, minimum: 1, maximum: 7 })
   dayOfWeek!: number;
 
   @BooleanFieldOptional()

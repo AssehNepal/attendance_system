@@ -18,6 +18,7 @@ export class CreateOnDutyRemarksTable1747000000007 implements MigrationInterface
         "token_expires_at" timestamptz NOT NULL,
         "submitted_at"     timestamptz,
         "created_at"       timestamptz NOT NULL DEFAULT now(),
+        "updated_at"       timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_on_duty_remarks" PRIMARY KEY ("id"),
         CONSTRAINT "uq_duty_token" UNIQUE ("token")
       )

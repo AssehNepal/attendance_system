@@ -12,9 +12,10 @@ export class CreateWeeklyHolidaysTable1747000000010 implements MigrationInterfac
         "is_active"   boolean NOT NULL DEFAULT true,
         "created_by"  uuid NOT NULL,
         "created_at"  timestamptz NOT NULL DEFAULT now(),
+        "updated_at"  timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_weekly_holidays" PRIMARY KEY ("id"),
         CONSTRAINT "uq_weekly_holiday_per_office" UNIQUE ("office_id", "day_of_week"),
-        CONSTRAINT "chk_day_of_week" CHECK ("day_of_week" >= 0 AND "day_of_week" <= 6)
+        CONSTRAINT "chk_day_of_week" CHECK ("day_of_week" >= 1 AND "day_of_week" <= 7)
       )
     `);
 

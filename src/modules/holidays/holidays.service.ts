@@ -21,8 +21,9 @@ export class HolidaysService {
   async createWeekly(
     dto: CreateWeeklyHolidayDto,
     createdById: Uuid,
+    officeId: Uuid,
   ): Promise<WeeklyHoliday> {
-    const weekly = this.weeklyRepo.create({ ...dto, createdById });
+    const weekly = this.weeklyRepo.create({ ...dto, officeId, createdById });
 
     return this.weeklyRepo.save(weekly);
   }
@@ -46,8 +47,9 @@ export class HolidaysService {
   async createHoliday(
     dto: CreateHolidayDto,
     createdById: Uuid,
+    officeId: Uuid,
   ): Promise<Holiday> {
-    const holiday = this.holidayRepo.create({ ...dto, createdById });
+    const holiday = this.holidayRepo.create({ ...dto, officeId, createdById });
 
     return this.holidayRepo.save(holiday);
   }

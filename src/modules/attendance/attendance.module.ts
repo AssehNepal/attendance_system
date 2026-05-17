@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { Holiday } from '../holidays/entities/holiday.entity';
+import { WeeklyHoliday } from '../holidays/entities/weekly-holiday.entity';
+import { Staff } from '../staff/entities/staff.entity';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 import { AttendanceLog } from './entities/attendance-log.entity';
@@ -17,6 +20,9 @@ import { ScanLog } from './entities/scan-log.entity';
       OnDutyRemark,
       OutingRequest,
       LeaveRequest,
+      WeeklyHoliday,
+      Holiday,
+      Staff,
     ]),
   ],
   controllers: [AttendanceController],
