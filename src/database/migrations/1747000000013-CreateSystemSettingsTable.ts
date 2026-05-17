@@ -8,9 +8,10 @@ export class CreateSystemSettingsTable1747000000013 implements MigrationInterfac
       CREATE TABLE IF NOT EXISTS "system_settings" (
         "id"          uuid NOT NULL DEFAULT uuid_generate_v4(),
         "key"         varchar(100) NOT NULL,
-        "value"       varchar(500) NOT NULL,
-        "description" text,
+        "value"       text NOT NULL,
+        "image_url" text,
         "updated_by"  uuid,
+        "created_at"  timestamptz NOT NULL DEFAULT now(),
         "updated_at"  timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "pk_system_settings" PRIMARY KEY ("id"),
         CONSTRAINT "uq_setting_key" UNIQUE ("key")

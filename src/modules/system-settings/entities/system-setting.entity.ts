@@ -10,8 +10,8 @@ export class SystemSetting extends AbstractEntity {
   @Column({ type: 'varchar', length: 500 })
   value!: string;
 
-  @Column({ type: 'text', nullable: true })
-  description?: string;
+  @Column({ type: 'text', nullable: true, name: 'image_url' })
+  imageUrl?: string;
 
   @Column({ type: 'uuid', nullable: true, name: 'updated_by' })
   updatedById?: Uuid;

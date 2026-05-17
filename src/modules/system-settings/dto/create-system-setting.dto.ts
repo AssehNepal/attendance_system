@@ -1,7 +1,4 @@
-import {
-  StringField,
-  StringFieldOptional,
-} from '../../../decorators/field.decorators';
+import { StringField } from '../../../decorators/field.decorators';
 
 export class CreateSystemSettingDto {
   @StringField({ maxLength: 100 })
@@ -9,7 +6,4 @@ export class CreateSystemSettingDto {
 
   @StringField({ maxLength: 500 })
   value!: string;
-
-  @StringFieldOptional()
-  description?: string;
 }
