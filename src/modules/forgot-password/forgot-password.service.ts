@@ -30,31 +30,40 @@ export class ForgotPasswordService {
     private readonly emailService: EmailService,
   ) {}
 
-  async sendOtp(sessionUser: { id: Uuid; email: string; userType: string }) {
-    const { id, email, userType } = sessionUser;
-
+  async sendOtp(email: string) {
     if (!email) {
-      throw new BadRequestException('No email associated with your account');
+      throw new BadRequestException('Email must be provided');
     }
 
-    // Verify the user still exists
-    if (userType === 'staff') {
-      const staff = await this.staffRepository.findOne({ where: { id } });
-      if (!staff) throw new NotFoundException('Staff not found');
+    // Check admin first, then staff
+    let userId: Uuid;
+    let userType: 'admin' | 'staff';
+
+    const admin = await this.adminRepository.findOne({ where: { email } });
+
+    if (admin) {
+      userId = admin.id;
+      userType = 'admin';
     } else {
-      const admin = await this.adminRepository.findOne({ where: { id } });
-      if (!admin) throw new NotFoundException('Admin not found');
+      const staff = await this.staffRepository.findOne({ where: { email } });
+
+      if (!staff) {
+        throw new NotFoundException('No account found with this email');
+      }
+
+      userId = staff.id;
+      userType = 'staff';
     }
 
     const rawOtp = this.generatorService.generateSixDigitToken();
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
     // Remove any existing OTP for this user
-    await this.otpRepository.delete({ userId: id });
+    await this.otpRepository.delete({ userId });
 
     await this.otpRepository.save({
-      userId: id,
-      userType: userType === 'staff' ? 'staff' : 'admin',
+      userId,
+      userType,
       otp: rawOtp,
       email,
       expiresAt,
@@ -66,15 +75,30 @@ export class ForgotPasswordService {
     return { message: 'OTP sent successfully to your registered email' };
   }
 
-  async verifyOtpAndResetPassword(
-    sessionUser: { id: Uuid; userType: string },
-    dto: ResetPasswordDto,
-  ) {
-    const { otp, newPassword } = dto;
-    const { id, userType } = sessionUser;
+  async verifyOtpAndResetPassword(dto: ResetPasswordDto) {
+    const { email, otp, newPassword } = dto;
+
+    // Find user by email across admin and staff
+    let userId: Uuid;
+    let userType: 'admin' | 'staff';
+
+    const admin = await this.adminRepository.findOne({ where: { email } });
+
+    if (admin) {
+      userId = admin.id;
+      userType = 'admin';
+    } else {
+      const staff = await this.staffRepository.findOne({ where: { email } });
+
+      if (!staff)
+        throw new NotFoundException('No account found with this email');
+
+      userId = staff.id;
+      userType = 'staff';
+    }
 
     const otpRecord = await this.otpRepository.findOne({
-      where: { userId: id },
+      where: { userId },
       order: { createdAt: 'DESC' },
     });
 
@@ -83,32 +107,35 @@ export class ForgotPasswordService {
     }
 
     if (otpRecord.expiresAt < new Date()) {
-      await this.otpRepository.delete({ userId: id });
+      await this.otpRepository.delete({ userId });
       throw new BadRequestException(
         'OTP has expired. Please request a new one.',
       );
     }
 
-    const isValid = otp === otpRecord.otp;
-    if (!isValid) {
+    if (otp !== otpRecord.otp) {
       throw new BadRequestException('Invalid OTP');
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     if (userType === 'staff') {
-      const staff = await this.staffRepository.findOne({ where: { id } });
+      const staff = await this.staffRepository.findOne({
+        where: { id: userId },
+      });
       if (!staff) throw new NotFoundException('Staff not found');
       staff.password = hashedPassword;
       await this.staffRepository.save(staff);
     } else {
-      const admin = await this.adminRepository.findOne({ where: { id } });
-      if (!admin) throw new NotFoundException('Admin not found');
-      admin.passwordHash = hashedPassword;
-      await this.adminRepository.save(admin);
+      const adminUser = await this.adminRepository.findOne({
+        where: { id: userId },
+      });
+      if (!adminUser) throw new NotFoundException('Admin not found');
+      adminUser.passwordHash = hashedPassword;
+      await this.adminRepository.save(adminUser);
     }
 
-    await this.otpRepository.delete({ userId: id });
+    await this.otpRepository.delete({ userId });
 
     return { message: 'Password reset successfully' };
   }
