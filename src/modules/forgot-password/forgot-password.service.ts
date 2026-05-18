@@ -139,4 +139,68 @@ export class ForgotPasswordService {
 
     return { message: 'Password reset successfully' };
   }
+
+  // ── Authenticated versions (email from session) ──
+
+  async sendOtpBySession(sessionUser: {
+    id: Uuid;
+    email: string;
+    userType: string;
+  }) {
+    if (!sessionUser.email) {
+      throw new BadRequestException('No email associated with your account');
+    }
+
+    return this.sendOtp(sessionUser.email);
+  }
+
+  async verifyOtpAndResetPasswordBySession(
+    sessionUser: { id: Uuid; userType: string },
+    otp: string,
+    newPassword: string,
+  ) {
+    const { id: userId, userType } = sessionUser;
+
+    const otpRecord = await this.otpRepository.findOne({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!otpRecord) {
+      throw new BadRequestException('No OTP found. Please request a new one.');
+    }
+
+    if (otpRecord.expiresAt < new Date()) {
+      await this.otpRepository.delete({ userId });
+      throw new BadRequestException(
+        'OTP has expired. Please request a new one.',
+      );
+    }
+
+    if (otp !== otpRecord.otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    if (userType === 'staff') {
+      const staff = await this.staffRepository.findOne({
+        where: { id: userId },
+      });
+      if (!staff) throw new NotFoundException('Staff not found');
+      staff.password = hashedPassword;
+      await this.staffRepository.save(staff);
+    } else {
+      const adminUser = await this.adminRepository.findOne({
+        where: { id: userId },
+      });
+      if (!adminUser) throw new NotFoundException('Admin not found');
+      adminUser.passwordHash = hashedPassword;
+      await this.adminRepository.save(adminUser);
+    }
+
+    await this.otpRepository.delete({ userId });
+
+    return { message: 'Password reset successfully' };
+  }
 }
