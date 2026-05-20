@@ -7,8 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 
 import type { PageOptionsDto } from '../../common/dto/page-options.dto';
-import { WeeklyHoliday } from '../holidays/entities/weekly-holiday.entity';
 import { Holiday } from '../holidays/entities/holiday.entity';
+import { WeeklyHoliday } from '../holidays/entities/weekly-holiday.entity';
 import { Staff } from '../staff/entities/staff.entity';
 import { CreateAttendanceLogDto } from './dto/create-attendance-log.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
@@ -49,6 +49,16 @@ export class AttendanceService {
   private getDayOfWeek(date: Date): number {
     const jsDay = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
     return jsDay === 0 ? 7 : jsDay; // 1=Mon, ..., 6=Sat, 7=Sun
+  }
+
+  /** Convert "HH:mm" to 12-hour format like "1:50 PM" */
+  private to12Hour(time: string): string {
+    const [hStr, mStr] = time.split(':');
+    let h = Number(hStr);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return `${h}:${mStr} ${suffix}`;
   }
 
   private async isWeeklyHoliday(officeId: Uuid, date: Date): Promise<boolean> {
@@ -200,7 +210,48 @@ export class AttendanceService {
   // ── Outing Requests ──
 
   async createOuting(dto: CreateOutingRequestDto): Promise<OutingRequest> {
-    const outing = this.outingRepo.create(dto);
+    const todayStr = new Date().toISOString().split('T')[0]!;
+    const isFutureDate = dto.logDate > todayStr;
+
+    let outingBeforeCheckin = false;
+
+    if (!isFutureDate) {
+      const attendanceLog = await this.attendanceRepo.findOne({
+        where: { staffId: dto.staffId, logDate: dto.logDate },
+      });
+
+      outingBeforeCheckin = !attendanceLog?.checkinTime;
+
+      if (outingBeforeCheckin) {
+        // Staff left BEFORE checking in — no log exists yet.
+        // Create a new log with status 'out' so the day isn't counted as absent.
+        await this.attendanceRepo.save(
+          this.attendanceRepo.create({
+            staffId: dto.staffId,
+            logDate: dto.logDate,
+            // never checked in
+            checkinTime: undefined,
+            // left at outFrom time
+            checkoutTime: dto.outFrom,
+            status: 'out',
+            checkinSource: undefined,
+            checkoutSource: 'outing',
+          }),
+        );
+      } else if (attendanceLog) {
+        // Staff has already checked in — mark them as 'out' from outFrom time.
+        // Whether willResume is true or false, they are currently OUT.
+        // On resume (scan/checkin again) the log will be updated back to 'present'.
+        attendanceLog.status = 'out';
+        attendanceLog.checkoutTime = dto.outFrom;
+        attendanceLog.checkoutSource = 'outing';
+        await this.attendanceRepo.save(attendanceLog);
+      }
+    }
+    // For future dates: attendance log is untouched —
+    // the staff will check in normally on that day.
+
+    const outing = this.outingRepo.create({ ...dto, outingBeforeCheckin });
 
     return this.outingRepo.save(outing);
   }
@@ -222,6 +273,115 @@ export class AttendanceService {
     outing.status = 'cancelled';
 
     return this.outingRepo.save(outing);
+  }
+
+  // ── Outing Scheduler Methods ──
+
+  /**
+   * Process outings where out_from time has been reached.
+   * Sets attendance log status to 'out'.
+   */
+  async processOutingDepartures(): Promise<number> {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]!;
+    const currentHHMM = now.toTimeString().slice(0, 5); // "HH:mm"
+
+    // Find active outings for today where out_from matches current minute
+    const outings = await this.outingRepo.find({
+      where: {
+        logDate: todayStr,
+        status: 'active',
+      },
+    });
+
+    // Filter outings whose out_from starts with current HH:mm
+    const dueDepartures = outings.filter(
+      (o) => o.outFrom && o.outFrom.slice(0, 5) <= currentHHMM,
+    );
+
+    let processed = 0;
+
+    for (const outing of dueDepartures) {
+      const log = await this.attendanceRepo.findOne({
+        where: { staffId: outing.staffId, logDate: todayStr },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (log && log.status === 'out') {
+        // Already processed
+        continue;
+      }
+
+      if (log) {
+        log.status = 'out';
+        log.checkoutTime = outing.outFrom;
+        log.checkoutSource = 'outing';
+        await this.attendanceRepo.save(log);
+      } else {
+        // No log exists — create one with status 'out'
+        await this.attendanceRepo.save(
+          this.attendanceRepo.create({
+            staffId: outing.staffId,
+            logDate: todayStr,
+            checkinTime: undefined,
+            checkoutTime: outing.outFrom,
+            status: 'out',
+            checkinSource: undefined,
+            checkoutSource: 'outing',
+          }),
+        );
+      }
+
+      processed++;
+    }
+
+    return processed;
+  }
+
+  /**
+   * Process outings where resume_time has been reached.
+   * Sets attendance log status back to 'present' and marks outing as 'resumed'.
+   */
+  async processOutingReturns(): Promise<number> {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0]!;
+    const currentHHMM = now.toTimeString().slice(0, 5); // "HH:mm"
+
+    // Find active outings for today with willResume=true and resume_time reached
+    const outings = await this.outingRepo.find({
+      where: {
+        logDate: todayStr,
+        status: 'active',
+        willResume: true,
+      },
+    });
+
+    const dueReturns = outings.filter(
+      (o) => o.resumeTime && o.resumeTime.slice(0, 5) <= currentHHMM,
+    );
+
+    let processed = 0;
+
+    for (const outing of dueReturns) {
+      const log = await this.attendanceRepo.findOne({
+        where: { staffId: outing.staffId, logDate: todayStr },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (log && log.status === 'out') {
+        log.status = 'present';
+        log.checkoutTime = undefined;
+        await this.attendanceRepo.save(log);
+      }
+
+      outing.status = 'resumed';
+      outing.resumedAt = new Date();
+      await this.outingRepo.save(outing);
+
+      processed++;
+    }
+
+    return processed;
   }
 
   // ── Leave Requests ──
@@ -503,6 +663,7 @@ export class AttendanceService {
     // Calculate
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]!;
+    // eslint-disable-next-line unicorn/prefer-math-min-max
     const endStr = endDate < todayStr ? endDate : todayStr;
 
     const absentDates: string[] = [];
@@ -584,24 +745,42 @@ export class AttendanceService {
   // ── Daily Attendance Summary ──
 
   async getDailySummary(date: string, officeId: Uuid, departmentId?: Uuid) {
-    const where: any = { isActive: true, officeId };
+    const staffWhere: any = { isActive: true, officeId };
     if (departmentId) {
-      where.departmentId = departmentId;
+      staffWhere.departmentId = departmentId;
     }
-    const allStaff = await this.staffRepo.find({ where });
 
-    // Check if the date is a holiday for this office
+    // Run all queries in parallel for speed
+    const [
+      allStaff,
+      weeklyHolidays,
+      specificHolidays,
+      allLogs,
+      activeOutings,
+      leaveRecords,
+    ] = await Promise.all([
+      this.staffRepo.find({ where: staffWhere }),
+      this.weeklyHolidayRepo.find({ where: { officeId, isActive: true } }),
+      this.holidayRepo2.find({ where: { officeId } }),
+      this.attendanceRepo.find({ where: { logDate: date } }),
+      this.outingRepo
+        .createQueryBuilder('outing')
+        .where('outing.log_date = :date', { date })
+        .andWhere("outing.status != 'cancelled'")
+        .getMany(),
+      this.leaveRepo
+        .createQueryBuilder('leave')
+        .where('leave.leave_from <= :date', { date })
+        .andWhere('leave.leave_to >= :date', { date })
+        .andWhere("leave.status = 'approved'")
+        .getMany(),
+    ]);
+
+    // Check if holiday
     const [y, m, d] = date.split('-').map(Number);
     const dateObj = new Date(Date.UTC(y!, m! - 1, d!));
     const utcDay = dateObj.getUTCDay();
     const dayOfWeek = utcDay === 0 ? 7 : utcDay;
-
-    const weeklyHolidays = await this.weeklyHolidayRepo.find({
-      where: { officeId, isActive: true },
-    });
-    const specificHolidays = await this.holidayRepo2.find({
-      where: { officeId },
-    });
 
     const isWeeklyHol = weeklyHolidays.some((w) => w.dayOfWeek === dayOfWeek);
     const isSpecificHol = specificHolidays.some((h) => {
@@ -613,34 +792,69 @@ export class AttendanceService {
     });
     const isHoliday = isWeeklyHol || isSpecificHol;
 
-    // Get all present staff for this date
-    const presentLogs = await this.attendanceRepo
-      .createQueryBuilder('log')
-      .select('log.staff_id', 'staffId')
-      .where('log.log_date = :date', { date })
-      .andWhere("log.status = 'present'")
-      .getRawMany<{ staffId: string }>();
-    const presentSet = new Set(presentLogs.map((l) => l.staffId));
+    // Build lookup maps
+    const logStatusMap = new Map<string, string>();
+    const logRemarksMap = new Map<string, string | undefined>();
 
-    // Get all approved leaves covering this date
-    const leaveRecords = await this.leaveRepo
-      .createQueryBuilder('leave')
-      .where('leave.leave_from <= :date', { date })
-      .andWhere('leave.leave_to >= :date', { date })
-      .andWhere("leave.status = 'approved'")
-      .getMany();
+    for (const log of allLogs) {
+      logStatusMap.set(log.staffId, log.status);
+      logRemarksMap.set(log.staffId, log.remarks);
+    }
+
     const leaveSet = new Set(leaveRecords.map((l) => l.staffId));
 
+    // Determine current time HH:mm for outing time-based check
+    const now = new Date();
+    const currentHHMM = now.toTimeString().slice(0, 5); // "HH:mm"
+
+    // Build a map of staffId -> outing for time-based status
+    const outingByStaff = new Map<string, (typeof activeOutings)[0]>();
+    for (const o of activeOutings) {
+      outingByStaff.set(o.staffId, o);
+    }
+
+    // Map staff to statuses
     const staffSummaries = allStaff.map((staff) => {
-      let status: 'present' | 'absent' | 'leave' | 'holiday';
+      let status: 'present' | 'out' | 'absent' | 'leave' | 'holiday';
+      let remarks: string | undefined;
+
       if (isHoliday) {
         status = 'holiday';
-      } else if (presentSet.has(staff.id)) {
-        status = 'present';
-      } else if (leaveSet.has(staff.id)) {
-        status = 'leave';
       } else {
-        status = 'absent';
+        const logStatus = logStatusMap.get(staff.id);
+        remarks = logRemarksMap.get(staff.id) ?? undefined;
+
+        // Check outing time-based status
+        const outing = outingByStaff.get(staff.id);
+        if (outing) {
+          const outFrom = outing.outFrom?.slice(0, 5) ?? '';
+          const resumeTime = outing.resumeTime?.slice(0, 5) ?? '';
+
+          // Staff is currently OUT if: current time >= out_from AND (no resume_time OR current time < resume_time)
+          const isCurrentlyOut =
+            outFrom <= currentHHMM && (!resumeTime || currentHHMM < resumeTime);
+
+          if (isCurrentlyOut) {
+            status = 'out';
+            remarks = resumeTime
+              ? `Will resume from ${this.to12Hour(resumeTime)}`
+              : 'Out for the day';
+          } else if (resumeTime && currentHHMM >= resumeTime) {
+            // Resume time has passed — they should be back (present)
+            status = 'present';
+          } else {
+            // out_from hasn't arrived yet — use log status
+            status = logStatus === 'present' ? 'present' : 'absent';
+          }
+        } else if (logStatus === 'out') {
+          status = 'out';
+        } else if (logStatus === 'present') {
+          status = 'present';
+        } else if (leaveSet.has(staff.id)) {
+          status = 'leave';
+        } else {
+          status = 'absent';
+        }
       }
 
       return {
@@ -648,16 +862,12 @@ export class AttendanceService {
           id: staff.id,
           employeeId: staff.employeeId,
           name: staff.name,
-          email: staff.email,
           contactNo: staff.contactNo,
-          cidNo: staff.cidNo,
-          officeId: staff.officeId,
           departmentId: staff.departmentId,
-          employmentType: staff.employmentType,
           photo: staff.photo,
-          isActive: staff.isActive,
         },
         status,
+        remarks: remarks ?? null,
       };
     });
 
@@ -665,6 +875,7 @@ export class AttendanceService {
     const presentCount = staffSummaries.filter(
       (s) => s.status === 'present',
     ).length;
+    const outCount = staffSummaries.filter((s) => s.status === 'out').length;
     const absentCount = staffSummaries.filter(
       (s) => s.status === 'absent',
     ).length;
@@ -682,6 +893,7 @@ export class AttendanceService {
       summary: {
         totalStaff,
         presentCount,
+        outCount,
         absentCount,
         leaveCount,
         holidayCount,

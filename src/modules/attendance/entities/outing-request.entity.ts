@@ -16,6 +16,9 @@ export class OutingRequest extends AbstractEntity {
   @Column({ type: 'boolean', name: 'will_resume' })
   willResume!: boolean;
 
+  @Column({ type: 'time', name: 'out_from' })
+  outFrom!: string;
+
   @Column({ type: 'time', nullable: true, name: 'resume_time' })
   resumeTime?: string;
 

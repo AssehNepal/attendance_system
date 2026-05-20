@@ -11,6 +11,7 @@ export class CreateOutingRequestsTable1747000000008 implements MigrationInterfac
         "log_date"              date NOT NULL,
         "requested_at"          timestamptz NOT NULL DEFAULT now(),
         "will_resume"           boolean NOT NULL,
+        "out_from"              time NOT NULL,
         "resume_time"           time,
         "outing_before_checkin" boolean NOT NULL DEFAULT false,
         "status"                varchar(20) NOT NULL DEFAULT 'active',

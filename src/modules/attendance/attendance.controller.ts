@@ -8,7 +8,6 @@ import {
   Param,
   ParseIntPipe,
   ParseUUIDPipe,
-  Patch,
   Post,
   Put,
   Query,
@@ -21,8 +20,6 @@ import { AuthUser } from '../../decorators/auth-user.decorator';
 import { AuthGuard } from '../../guards/auth.guard';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceLogDto } from './dto/create-attendance-log.dto';
-import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
-import { CreateOutingRequestDto } from './dto/create-outing-request.dto';
 import { UpdateAttendanceLogDto } from './dto/update-attendance-log.dto';
 
 @Controller('attendance')
@@ -118,54 +115,6 @@ export class AttendanceController {
     @Param('logDate') logDate: string,
   ) {
     return this.attendanceService.findDutyRemarksByStaff(staffId, logDate);
-  }
-
-  // ── Outing Requests ──
-
-  @Post('outings')
-  @HttpCode(HttpStatus.CREATED)
-  createOuting(@Body() dto: CreateOutingRequestDto, @AuthUser() user: any) {
-    return this.attendanceService.createOuting({ ...dto, staffId: user.id });
-  }
-
-  @Get('outings/my')
-  findMyOutings(@AuthUser() user: any) {
-    return this.attendanceService.findOutingsByStaff(user.id);
-  }
-
-  @Get('outings/staff/:staffId')
-  @ApiParam({ name: 'staffId', type: 'string', format: 'uuid' })
-  findOutingsByStaff(@Param('staffId', ParseUUIDPipe) staffId: Uuid) {
-    return this.attendanceService.findOutingsByStaff(staffId);
-  }
-
-  @Patch('outings/:id/cancel')
-  cancelOuting(@Param('id', ParseUUIDPipe) id: Uuid) {
-    return this.attendanceService.cancelOuting(id);
-  }
-
-  // ── Leave Requests ──
-
-  @Post('leaves')
-  @HttpCode(HttpStatus.CREATED)
-  createLeave(@Body() dto: CreateLeaveRequestDto, @AuthUser() user: any) {
-    return this.attendanceService.createLeave({ ...dto, staffId: user.id });
-  }
-
-  @Get('leaves/my')
-  findMyLeaves(@AuthUser() user: any) {
-    return this.attendanceService.findLeavesByStaff(user.id);
-  }
-
-  @Get('leaves/staff/:staffId')
-  @ApiParam({ name: 'staffId', type: 'string', format: 'uuid' })
-  findLeavesByStaff(@Param('staffId', ParseUUIDPipe) staffId: Uuid) {
-    return this.attendanceService.findLeavesByStaff(staffId);
-  }
-
-  @Patch('leaves/:id/cancel')
-  cancelLeave(@Param('id', ParseUUIDPipe) id: Uuid) {
-    return this.attendanceService.cancelLeave(id);
   }
 
   // ── My Attendance Summary ──
