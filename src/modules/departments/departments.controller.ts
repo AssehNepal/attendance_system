@@ -53,6 +53,14 @@ export class DepartmentsController {
     return this.departmentsService.findByOffice(officeId);
   }
 
+  @Get('office-noauth/:officeId')
+  @UseGuards()
+  @ApiOperation({ summary: 'Get departments by office ID without auth' })
+  @ApiParam({ name: 'officeId', type: 'string', format: 'uuid' })
+  findByOfficeNoAuth(@Param('officeId', ParseUUIDPipe) officeId: Uuid) {
+    return this.departmentsService.findByOffice(officeId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get department by ID' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
